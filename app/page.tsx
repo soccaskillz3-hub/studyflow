@@ -1,69 +1,136 @@
-import Image from "next/image";
+"use client";
+
+import {useState} from "react";
+
+const schedule = [
+  {
+    id: 1,
+    subject: "CS 135",
+    time: "3:00 PM - 4:00 PM",
+    duration: "1 hour",
+    minutes: 60,
+    isBreak: false,
+  },
+  {
+    id: 2,
+    subject: "MATH 135",
+    time: "4:30 PM - 6:00 PM",
+    duration: "1.5 hours",
+    minutes: 90,
+    isBreak: false,
+  },
+  {
+    id: 3,
+    subject: "Break",
+    time: "6:00 PM - 6:30 PM",
+    duration: "30 minutes",
+    minutes: 30,
+    isBreak: true,
+  },
+];
+
+function formatMinutes(total: number) {
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  if (h === 0) return `${m}m`;
+  return m === 0 ? `${h}h` : `${h}h ${m}m`;
+}
 
 export default function Home() {
+  const [completed, setCompleted] = useState<number[]>([]);
+
+  // Clicking a session toggles it: complete on first click, undo on second.
+  const toggle = (id: number) =>
+    setCompleted((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+
+  const studySessions = schedule.filter((s) => !s.isBreak);
+  const plannedMinutes = studySessions.reduce((sum, s) => sum + s.minutes, 0);
+  const doneMinutes = studySessions
+    .filter((s) => completed.includes(s.id))
+    .reduce((sum, s) => sum + s.minutes, 0);
+  const percent = plannedMinutes === 0 ? 0 : Math.round((doneMinutes / plannedMinutes) * 100);
+  const nextSession = studySessions.find((s) => !completed.includes(s.id));
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <main className="min-h-screen bg-zinc-950 text-white">
+      <div className="mx-auto max-w-6xl px-8 py-12">
+        <h1 className="text-4xl font-bold">StudyFlow</h1>
+
+        <p className="mt-2 text-zinc-400">
+          Your study. Your schedule. Your flow.
+        </p>
+
+        <div className="mt-10 grid gap-6 md:grid-cols-2">
+          <div className="rounded-2xl bg-zinc-900 p-6">
+            <h2 className="text-xl font-semibold">Today&apos;s Progress</h2>
+            <p className="mt-4 text-3xl font-bold">{formatMinutes(doneMinutes)}</p>
+            <p className="mt-1 text-zinc-400">
+              of {formatMinutes(plannedMinutes)} planned · {percent}%
+            </p>
+            <div
+              className="mt-4 h-3 w-full overflow-hidden rounded-full bg-zinc-800"
+              role="progressbar"
+              aria-valuenow={percent}
+              aria-valuemin={0}
+              aria-valuemax={100}
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+              <div
+                className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+                style={{width: `${percent}%`}}
+              />
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-zinc-900 p-6">
+            <h2 className="text-xl font-semibold">Next Study Session</h2>
+            {nextSession ? (
+              <>
+                <p className="mt-4 text-2xl font-bold">{nextSession.subject}</p>
+                <p className="mt-1 text-zinc-400">{nextSession.time}</p>
+              </>
+            ) : (
+              <>
+                <p className="mt-4 text-2xl font-bold">All done 🎉</p>
+                <p className="mt-1 text-zinc-400">Nothing left for today.</p>
+              </>
+            )}
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="mt-12">
+          <h2 className="text-2xl font-semibold">Today&apos;s Schedule</h2>
+
+          <div className="mt-6">
+            {schedule.map((session) => {
+              const done = completed.includes(session.id);
+              return (
+                <button
+                  key={session.id}
+                  type="button"
+                  onClick={() => toggle(session.id)}
+                  aria-pressed={done}
+                  className={`mt-3 block w-full rounded-2xl p-6 text-left transition-colors ${
+                    done ? "bg-zinc-900/50" : "bg-zinc-900 hover:bg-zinc-800"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className={done ? "font-semibold line-through text-zinc-500" : "font-semibold"}>
+                        {session.subject}
+                      </p>
+                      <p className="mt-1 text-sm text-zinc-400">{session.time}</p>
+                    </div>
+
+                    <p className="text-zinc-400">{done ? "✓ Done" : session.duration}</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </main>
   );
 }
