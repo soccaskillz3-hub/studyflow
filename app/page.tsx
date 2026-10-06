@@ -1,35 +1,18 @@
 "use client";
 
 import {useEffect, useState, type FormEvent, type ReactNode} from "react";
+import TimePicker from "./components/TimePicker";
+import {formatMinutes, formatTime, fromMinutes, toMinutes} from "./lib/time";
 
 type Session = {
   id: string;
   subject: string;
-  start: string; // "HH:MM", 24-hour, from <input type="time">
+  start: string; // "HH:MM", 24-hour
   end: string;
   isBreak: boolean;
 };
 
 const STORAGE_KEY = "studyflow:v1";
-
-function toMinutes(time: string) {
-  const [h, m] = time.split(":").map(Number);
-  return h * 60 + m;
-}
-
-function formatTime(time: string) {
-  const [h, m] = time.split(":").map(Number);
-  const suffix = h >= 12 ? "PM" : "AM";
-  const hour12 = h % 12 === 0 ? 12 : h % 12;
-  return `${hour12}:${String(m).padStart(2, "0")} ${suffix}`;
-}
-
-function formatMinutes(total: number) {
-  const h = Math.floor(total / 60);
-  const m = total % 60;
-  if (h === 0) return `${m}m`;
-  return m === 0 ? `${h}h` : `${h}h ${m}m`;
-}
 
 const sessionMinutes = (s: Session) => toMinutes(s.end) - toMinutes(s.start);
 
@@ -167,6 +150,11 @@ export default function Home() {
     day: "numeric",
   });
 
+  // Where the pickers start when empty: the next full hour, and an hour after the start.
+  const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+  const startSuggestion = fromMinutes(Math.ceil((nowMinutes + 1) / 60) * 60);
+  const endSuggestion = fromMinutes(toMinutes(start || startSuggestion) + 60);
+
   const inputClass =
     "border-b border-white/30 bg-transparent px-1 py-2 text-white placeholder:text-white/45 outline-none transition focus:border-cyan-300 [color-scheme:dark]";
 
@@ -234,21 +222,9 @@ export default function Home() {
                 className={`${inputClass} md:min-w-0 md:flex-1`}
               />
               <div className="flex items-end gap-3">
-                <input
-                  type="time"
-                  value={start}
-                  onChange={(e) => setStart(e.target.value)}
-                  aria-label="Start time"
-                  className={`${inputClass} min-w-0 flex-1 tabular-nums`}
-                />
+                <TimePicker value={start} onChange={setStart} label="Start time" suggestion={startSuggestion} />
                 <span className="pb-2 text-xs text-white/50">to</span>
-                <input
-                  type="time"
-                  value={end}
-                  onChange={(e) => setEnd(e.target.value)}
-                  aria-label="End time"
-                  className={`${inputClass} min-w-0 flex-1 tabular-nums`}
-                />
+                <TimePicker value={end} onChange={setEnd} label="End time" suggestion={endSuggestion} align="right" />
               </div>
               <div className="flex items-center justify-between gap-4">
                 <label className="flex cursor-pointer items-center gap-2 text-xs uppercase tracking-[0.2em] text-white/70">

@@ -25,6 +25,24 @@ body {
     0 0 18px rgba(2, 8, 22, 0.45);
 }
 
+/* Time picker columns: no scrollbar, and items fade out at the top and bottom edges. */
+.sf-picker-col {
+  scrollbar-width: none;
+  mask-image: linear-gradient(to bottom, transparent, #000 22%, #000 78%, transparent);
+}
+.sf-picker-col::-webkit-scrollbar {
+  display: none;
+}
+
+.sf-pop {
+  animation: sf-pop 140ms ease-out both;
+}
+
+@keyframes sf-pop {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
+}
+
 /* ---------- Scene palette ----------
    Registered so the browser can animate them: changing time of day fades every color. */
 
