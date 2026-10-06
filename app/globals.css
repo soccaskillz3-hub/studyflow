@@ -18,26 +18,109 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
 }
 
-/* ---------- Backdrop: quiet dusk over water ---------- */
+/* Floating UI: no panels, so text carries its own soft shadow to separate it from the sky. */
+.sf-lift {
+  text-shadow:
+    0 1px 2px rgba(2, 6, 16, 0.55),
+    0 0 18px rgba(2, 8, 22, 0.45);
+}
 
-/* Each sky ends in a hard edge at the horizon (~71%), where the water layer takes over. */
-.sf-sky-clear {
-  background: linear-gradient(to bottom, #070b16 0%, #0d1528 30%, #18223a 52%, #2a2b45 64%, #3b3448 70%, #1a2236 71%);
+/* ---------- Scene palette ----------
+   Registered so the browser can animate them: changing time of day fades every color. */
+
+@property --veil { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --veil-low { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --cloud { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --cloud-dense { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --haze { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --water-1 { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --water-2 { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --water-3 { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --water-4 { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --glint { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --fog { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --scrim { syntax: "<color>"; inherits: true; initial-value: transparent; }
+
+.sf-scene {
+  transition-property: opacity, --veil, --veil-low, --cloud, --cloud-dense, --haze, --water-1, --water-2,
+    --water-3, --water-4, --glint, --fog, --scrim;
+  transition-duration: 700ms, 1800ms, 1800ms, 1800ms, 1800ms, 1800ms, 1800ms, 1800ms, 1800ms, 1800ms,
+    1800ms, 1800ms, 1800ms;
+  transition-timing-function: ease-in-out;
 }
-.sf-sky-cloudy {
-  background: linear-gradient(to bottom, #0a0e18 0%, #131a28 30%, #1e2535 52%, #282c3d 64%, #303142 70%, #1a2236 71%);
+
+.sf-scene[data-time="sunrise"] {
+  --veil: #6c6578;
+  --veil-low: #a3959b;
+  --cloud: rgba(255, 186, 166, 0.26);
+  --cloud-dense: rgba(150, 126, 146, 0.38);
+  --haze: rgba(255, 172, 128, 0.42);
+  --water-1: #4b5078;
+  --water-2: #3a4168;
+  --water-3: #2a3254;
+  --water-4: #1b2340;
+  --glint: rgba(255, 204, 156, 0.4);
+  --fog: rgba(232, 208, 204, 0.24);
+  --scrim: rgba(20, 16, 40, 0.58);
 }
-.sf-sky-rain {
-  background: linear-gradient(to bottom, #070a12 0%, #0f141f 30%, #181e2b 52%, #212634 64%, #262a37 70%, #151c2c 71%);
+
+.sf-scene[data-time="day"] {
+  --veil: #6a7889;
+  --veil-low: #9eabb7;
+  --cloud: rgba(255, 255, 255, 0.4);
+  --cloud-dense: rgba(178, 190, 204, 0.5);
+  --haze: rgba(255, 252, 238, 0.3);
+  --water-1: #4a7d9f;
+  --water-2: #376a8c;
+  --water-3: #285575;
+  --water-4: #1a3f5c;
+  --glint: rgba(255, 255, 240, 0.5);
+  --fog: rgba(228, 234, 242, 0.32);
+  --scrim: rgba(8, 24, 44, 0.5);
 }
-.sf-sky-storm {
-  background: linear-gradient(to bottom, #05060c 0%, #0c0e19 30%, #151626 52%, #1d1c2d 64%, #221f31 70%, #121827 71%);
+
+.sf-scene[data-time="dusk"] {
+  --veil: #303142;
+  --veil-low: #3c3c4c;
+  --cloud: rgba(148, 163, 196, 0.16);
+  --cloud-dense: rgba(96, 106, 132, 0.32);
+  --haze: rgba(214, 160, 150, 0.16);
+  --water-1: #222c45;
+  --water-2: #1a2339;
+  --water-3: #131b2e;
+  --water-4: #0c1323;
+  --glint: rgba(248, 240, 220, 0.24);
+  --fog: rgba(170, 182, 204, 0.16);
+  --scrim: rgba(4, 8, 20, 0.2);
 }
-.sf-sky-snow {
-  background: linear-gradient(to bottom, #10162a 0%, #1b2337 30%, #29314a 52%, #363d55 64%, #41465c 70%, #1f283c 71%);
+
+.sf-scene[data-time="night"] {
+  --veil: #1c202c;
+  --veil-low: #252935;
+  --cloud: rgba(120, 136, 168, 0.1);
+  --cloud-dense: rgba(58, 68, 92, 0.38);
+  --haze: rgba(110, 130, 190, 0.08);
+  --water-1: #141c30;
+  --water-2: #0f1627;
+  --water-3: #0a101e;
+  --water-4: #060b16;
+  --glint: rgba(220, 230, 255, 0.18);
+  --fog: rgba(140, 150, 172, 0.12);
+  --scrim: rgba(2, 4, 12, 0.1);
 }
-.sf-sky-fog {
-  background: linear-gradient(to bottom, #0f141f 0%, #1a202c 30%, #262c39 52%, #303643 64%, #373c48 70%, #222937 71%);
+
+/* Skies end at the horizon (~71%), where the water layer takes over. */
+.sf-sky-sunrise {
+  background: linear-gradient(to bottom, #1c2748 0%, #34406a 24%, #6f6488 44%, #c8858a 58%, #f0a77f 66%, #f7cf9c 71%);
+}
+.sf-sky-day {
+  background: linear-gradient(to bottom, #1d4a78 0%, #2e6495 28%, #4f84b2 48%, #82abc8 62%, #b4cede 71%);
+}
+.sf-sky-dusk {
+  background: linear-gradient(to bottom, #070b16 0%, #0d1528 30%, #18223a 52%, #2a2b45 64%, #3b3448 71%);
+}
+.sf-sky-night {
+  background: linear-gradient(to bottom, #02040b 0%, #060b17 35%, #0b1325 58%, #111a2e 71%);
 }
 
 .sf-star {
@@ -49,42 +132,95 @@ body {
   to   { transform: scale(1.15); filter: brightness(1.4); }
 }
 
+/* Sun and moon glide to each time of day's position; the inactive one fades out.
+   They sit near the right edge so they never land behind the content column. */
+.sf-sun,
 .sf-moon {
-  top: 11%;
-  right: 14%;
+  border-radius: 9999px;
+  transition-property: top, right, opacity, scale, background, box-shadow;
+  transition-duration: 1800ms;
+  transition-timing-function: ease-in-out;
+}
+
+.sf-sun {
+  top: 8%;
+  right: 5%;
+  width: 56px;
+  height: 56px;
+  background: radial-gradient(circle, #fffef6 0%, #fff6d8 60%, #ffe9b0 100%);
+  box-shadow:
+    0 0 50px 16px rgba(255, 248, 220, 0.4),
+    0 0 180px 80px rgba(255, 240, 200, 0.18);
+}
+
+[data-time="sunrise"] .sf-sun {
+  top: 61%;
+  right: 6%;
+  width: 72px;
+  height: 72px;
+  background: radial-gradient(circle, #fff3d6 0%, #ffcf8f 55%, #ff9f6e 100%);
+  box-shadow:
+    0 0 60px 20px rgba(255, 180, 120, 0.45),
+    0 0 220px 110px rgba(255, 150, 110, 0.22);
+}
+
+.sf-moon {
+  top: 22%;
+  right: 5%;
   width: 46px;
   height: 46px;
-  border-radius: 9999px;
   background: radial-gradient(circle at 40% 38%, #f8f4e8 0%, #e6dfcc 55%, #cfc6b0 100%);
   box-shadow:
     0 0 40px 8px rgba(248, 240, 220, 0.12),
     0 0 140px 50px rgba(200, 190, 230, 0.07);
-  opacity: 0.7;
+}
+
+[data-time="night"] .sf-moon {
+  top: 12%;
+  right: 6%;
+}
+
+/* On wide screens there's room to bring them in from the edge. */
+@media (min-width: 1280px) {
+  .sf-sun { right: 13%; }
+  [data-time="sunrise"] .sf-sun { right: 15%; }
+  .sf-moon { right: 12%; }
+  [data-time="night"] .sf-moon { right: 15%; }
 }
 
 @media (max-width: 640px) {
+  .sf-sun,
   .sf-moon {
-    top: 4%;
-    right: 7%;
-    width: 30px;
-    height: 30px;
+    scale: 0.6;
   }
-  .sf-reflection {
-    right: calc(7% + 15px);
+  .sf-sun,
+  .sf-moon,
+  [data-time="night"] .sf-moon {
+    top: 1%;
+    right: -2%;
   }
+  [data-time="sunrise"] .sf-sun {
+    top: 60%;
+    right: 2%;
+  }
+}
+
+/* Overcast tint over the sky, darker toward the top. */
+.sf-veil {
+  background: linear-gradient(to bottom, var(--veil) 0%, var(--veil-low) 71%, transparent 71%);
 }
 
 .sf-cloud {
   left: 0;
   border-radius: 9999px;
-  background: radial-gradient(ellipse at center, rgba(148, 163, 196, 0.16) 0%, rgba(148, 163, 196, 0.06) 45%, transparent 70%);
+  background: radial-gradient(ellipse at center, var(--cloud) 0%, color-mix(in srgb, var(--cloud) 40%, transparent) 45%, transparent 70%);
   filter: blur(14px);
   animation: sf-drift linear infinite;
 }
 
-/* Thick, slightly lit cloud masses for overcast skies. */
+/* Thick cloud masses for overcast skies. */
 .sf-cloud-dense {
-  background: radial-gradient(ellipse at center, rgba(96, 106, 132, 0.32) 0%, rgba(70, 80, 104, 0.18) 45%, transparent 70%);
+  background: radial-gradient(ellipse at center, var(--cloud-dense) 0%, color-mix(in srgb, var(--cloud-dense) 55%, transparent) 45%, transparent 70%);
   filter: blur(26px);
 }
 
@@ -93,37 +229,86 @@ body {
   to   { transform: translateX(110vw); }
 }
 
-/* Faint warm glow sitting on the horizon. */
+/* Glow sitting on the horizon. */
 .sf-haze {
-  top: 58%;
-  height: 16%;
-  background: radial-gradient(ellipse 70% 100% at 50% 100%, rgba(214, 160, 150, 0.14), transparent 70%);
+  top: 52%;
+  height: 22%;
+  background: radial-gradient(ellipse 75% 100% at 60% 100%, var(--haze), transparent 70%);
 }
+
+/* ---------- Water ---------- */
 
 .sf-water {
   top: 71%;
-  background: linear-gradient(to bottom, #1a2338 0%, #111a2c 40%, #0a1120 100%);
+  background: var(--water-4);
 }
 
-.sf-horizon {
-  height: 1px;
-  background: linear-gradient(to right, transparent, rgba(226, 232, 240, 0.18) 30%, rgba(226, 232, 240, 0.18) 70%, transparent);
+/* Each band is a wavy crest (SVG) on top of a flat fill; later bands sit in front. */
+.sf-tone-1 { --tone: var(--water-1); --tone-next: var(--water-2); }
+.sf-tone-2 { --tone: var(--water-2); --tone-next: var(--water-3); }
+.sf-tone-3 { --tone: var(--water-3); --tone-next: var(--water-4); }
+.sf-tone-4 { --tone: color-mix(in srgb, var(--water-4) 70%, black); --tone-next: color-mix(in srgb, var(--water-4) 40%, black); }
+
+.sf-wave-band {
+  background: linear-gradient(to bottom, var(--tone), var(--tone-next));
 }
 
-/* Moonlight broken up by the water: a column of short shimmering dashes. */
+.sf-wave-band svg path {
+  fill: var(--tone);
+}
+
+.sf-wave {
+  width: 200%;
+  animation: sf-wave-roll linear infinite;
+}
+
+@keyframes sf-wave-roll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.sf-wave-bob {
+  animation: sf-wave-bob ease-in-out infinite alternate;
+}
+
+@keyframes sf-wave-bob {
+  from { transform: translateY(0); }
+  to   { transform: translateY(3px); }
+}
+
+/* Light broken up by the water: a column of short shimmering dashes under the sun or moon.
+   Its right offset is the body's right offset plus half the body's width, to stay centered under it. */
 .sf-reflection {
-  right: calc(14% + 23px);
+  right: calc(5% + 23px);
   width: 90px;
   height: 75%;
   transform: translateX(50%);
-  background: repeating-linear-gradient(
-    to bottom,
-    rgba(248, 240, 220, 0.22) 0 2px,
-    transparent 2px 9px
-  );
+  background: repeating-linear-gradient(to bottom, var(--glint) 0 2px, transparent 2px 9px);
   mask-image: radial-gradient(ellipse 50% 100% at 50% 0%, #000 0%, transparent 80%);
   filter: blur(1.5px);
+  transition: right 1800ms ease-in-out, width 1800ms ease-in-out;
   animation: sf-shimmer 6s ease-in-out infinite alternate;
+}
+
+[data-time="sunrise"] .sf-reflection { right: calc(6% + 36px); width: 160px; }
+[data-time="day"] .sf-reflection { right: calc(5% + 28px); width: 140px; }
+[data-time="night"] .sf-reflection { right: calc(6% + 23px); }
+
+@media (min-width: 1280px) {
+  .sf-reflection { right: calc(12% + 23px); }
+  [data-time="sunrise"] .sf-reflection { right: calc(15% + 36px); }
+  [data-time="day"] .sf-reflection { right: calc(13% + 28px); }
+  [data-time="night"] .sf-reflection { right: calc(15% + 23px); }
+}
+
+@media (max-width: 640px) {
+  .sf-reflection,
+  [data-time] .sf-reflection {
+    right: 8%;
+  }
+  [data-time="sunrise"] .sf-reflection {
+    right: calc(2% + 36px);
+  }
 }
 
 @keyframes sf-shimmer {
@@ -148,6 +333,16 @@ body {
   to   { background-position-x: 240px; }
 }
 
+.sf-water-veil {
+  background: var(--veil);
+}
+
+/* ---------- Finishing layers ---------- */
+
+.sf-scrim {
+  background: radial-gradient(ellipse 62% 100% at 50% 50%, var(--scrim) 0%, color-mix(in srgb, var(--scrim) 60%, transparent) 45%, transparent 92%);
+}
+
 .sf-grain {
   opacity: 0.07;
   mix-blend-mode: overlay;
@@ -155,7 +350,7 @@ body {
 }
 
 .sf-vignette {
-  background: radial-gradient(ellipse 120% 90% at 50% 40%, transparent 55%, rgba(3, 6, 14, 0.65) 100%);
+  background: radial-gradient(ellipse 120% 90% at 50% 40%, transparent 55%, rgba(3, 6, 14, 0.55) 100%);
 }
 
 /* ---------- Weather effects ---------- */
@@ -232,13 +427,19 @@ body {
 
 /* Fog: a general veil plus soft bands drifting across the horizon. */
 .sf-fog-veil {
-  background: linear-gradient(to bottom, transparent 20%, rgba(148, 160, 182, 0.08) 55%, rgba(148, 160, 182, 0.14) 72%, rgba(148, 160, 182, 0.06) 100%);
+  background: linear-gradient(
+    to bottom,
+    transparent 20%,
+    color-mix(in srgb, var(--fog) 50%, transparent) 55%,
+    var(--fog) 72%,
+    color-mix(in srgb, var(--fog) 40%, transparent) 100%
+  );
 }
 
 .sf-fog {
   left: -50vw;
   width: 200vw;
-  background: radial-gradient(ellipse 50% 50% at 50% 50%, rgba(170, 182, 204, 0.16), transparent 70%);
+  background: radial-gradient(ellipse 50% 50% at 50% 50%, var(--fog), transparent 70%);
   filter: blur(30px);
   animation: sf-fog-drift ease-in-out infinite alternate;
 }
@@ -251,6 +452,8 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .sf-star,
   .sf-cloud,
+  .sf-wave,
+  .sf-wave-bob,
   .sf-reflection,
   .sf-ripple,
   .sf-rain,
