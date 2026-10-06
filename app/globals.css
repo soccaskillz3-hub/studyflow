@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0b1220;
+  --foreground: #e2e8f0;
 }
 
 @theme inline {
@@ -12,15 +12,254 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* ---------- Backdrop: quiet dusk over water ---------- */
+
+/* Each sky ends in a hard edge at the horizon (~71%), where the water layer takes over. */
+.sf-sky-clear {
+  background: linear-gradient(to bottom, #070b16 0%, #0d1528 30%, #18223a 52%, #2a2b45 64%, #3b3448 70%, #1a2236 71%);
+}
+.sf-sky-cloudy {
+  background: linear-gradient(to bottom, #0a0e18 0%, #131a28 30%, #1e2535 52%, #282c3d 64%, #303142 70%, #1a2236 71%);
+}
+.sf-sky-rain {
+  background: linear-gradient(to bottom, #070a12 0%, #0f141f 30%, #181e2b 52%, #212634 64%, #262a37 70%, #151c2c 71%);
+}
+.sf-sky-storm {
+  background: linear-gradient(to bottom, #05060c 0%, #0c0e19 30%, #151626 52%, #1d1c2d 64%, #221f31 70%, #121827 71%);
+}
+.sf-sky-snow {
+  background: linear-gradient(to bottom, #10162a 0%, #1b2337 30%, #29314a 52%, #363d55 64%, #41465c 70%, #1f283c 71%);
+}
+.sf-sky-fog {
+  background: linear-gradient(to bottom, #0f141f 0%, #1a202c 30%, #262c39 52%, #303643 64%, #373c48 70%, #222937 71%);
+}
+
+.sf-star {
+  animation: sf-twinkle ease-in-out infinite alternate;
+}
+
+@keyframes sf-twinkle {
+  from { transform: scale(1); filter: brightness(0.6); }
+  to   { transform: scale(1.15); filter: brightness(1.4); }
+}
+
+.sf-moon {
+  top: 11%;
+  right: 14%;
+  width: 46px;
+  height: 46px;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 40% 38%, #f8f4e8 0%, #e6dfcc 55%, #cfc6b0 100%);
+  box-shadow:
+    0 0 40px 8px rgba(248, 240, 220, 0.12),
+    0 0 140px 50px rgba(200, 190, 230, 0.07);
+  opacity: 0.7;
+}
+
+@media (max-width: 640px) {
+  .sf-moon {
+    top: 4%;
+    right: 7%;
+    width: 30px;
+    height: 30px;
+  }
+  .sf-reflection {
+    right: calc(7% + 15px);
+  }
+}
+
+.sf-cloud {
+  left: 0;
+  border-radius: 9999px;
+  background: radial-gradient(ellipse at center, rgba(148, 163, 196, 0.16) 0%, rgba(148, 163, 196, 0.06) 45%, transparent 70%);
+  filter: blur(14px);
+  animation: sf-drift linear infinite;
+}
+
+/* Thick, slightly lit cloud masses for overcast skies. */
+.sf-cloud-dense {
+  background: radial-gradient(ellipse at center, rgba(96, 106, 132, 0.32) 0%, rgba(70, 80, 104, 0.18) 45%, transparent 70%);
+  filter: blur(26px);
+}
+
+@keyframes sf-drift {
+  from { transform: translateX(-70vw); }
+  to   { transform: translateX(110vw); }
+}
+
+/* Faint warm glow sitting on the horizon. */
+.sf-haze {
+  top: 58%;
+  height: 16%;
+  background: radial-gradient(ellipse 70% 100% at 50% 100%, rgba(214, 160, 150, 0.14), transparent 70%);
+}
+
+.sf-water {
+  top: 71%;
+  background: linear-gradient(to bottom, #1a2338 0%, #111a2c 40%, #0a1120 100%);
+}
+
+.sf-horizon {
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(226, 232, 240, 0.18) 30%, rgba(226, 232, 240, 0.18) 70%, transparent);
+}
+
+/* Moonlight broken up by the water: a column of short shimmering dashes. */
+.sf-reflection {
+  right: calc(14% + 23px);
+  width: 90px;
+  height: 75%;
+  transform: translateX(50%);
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(248, 240, 220, 0.22) 0 2px,
+    transparent 2px 9px
+  );
+  mask-image: radial-gradient(ellipse 50% 100% at 50% 0%, #000 0%, transparent 80%);
+  filter: blur(1.5px);
+  animation: sf-shimmer 6s ease-in-out infinite alternate;
+}
+
+@keyframes sf-shimmer {
+  0%   { opacity: 0.55; transform: translateX(50%) scaleX(0.9); }
+  50%  { opacity: 0.9;  transform: translateX(50%) scaleX(1.08); }
+  100% { opacity: 0.6;  transform: translateX(50%) scaleX(0.95); }
+}
+
+.sf-ripple {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='10' viewBox='0 0 240 10'%3E%3Cpath d='M0 5 Q30 1 60 5 T120 5 T180 5 T240 5' fill='none' stroke='%23cbd5e1' stroke-width='1'/%3E%3C/svg%3E");
+  background-repeat: repeat-x;
+  /* Static, uneven mask over a moving wave: reads as scattered glints, not ruled lines. */
+  mask-image:
+    repeating-linear-gradient(to right, transparent 0 40px, #000 90px 150px, transparent 210px 330px, #000 380px 420px, transparent 470px 560px),
+    linear-gradient(to right, transparent, #000 20%, #000 80%, transparent);
+  mask-composite: intersect;
+  animation: sf-flow linear infinite;
+}
+
+@keyframes sf-flow {
+  from { background-position-x: 0; }
+  to   { background-position-x: 240px; }
+}
+
+.sf-grain {
+  opacity: 0.07;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.sf-vignette {
+  background: radial-gradient(ellipse 120% 90% at 50% 40%, transparent 55%, rgba(3, 6, 14, 0.65) 100%);
+}
+
+/* ---------- Weather effects ---------- */
+
+/* Effects that mount when the weather changes fade in instead of popping. */
+.sf-enter {
+  animation: sf-fade-in 1.8s ease-in-out both;
+}
+
+@keyframes sf-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Rain: tiled slanted streaks, scrolled diagonally. Near layers are larger, faster and brighter. */
+.sf-rain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='400'%3E%3Cg stroke='%23cbd5e1' stroke-linecap='round'%3E%3Cpath d='M101 56 l-4.8 22' stroke-opacity='0.4'/%3E%3Cpath d='M160 135 l-2.4 11' stroke-opacity='0.68'/%3E%3Cpath d='M20 160 l-2.5 11' stroke-opacity='0.41'/%3E%3Cpath d='M129 306 l-2.7 12' stroke-opacity='0.5'/%3E%3Cpath d='M186 351 l-4.5 20' stroke-opacity='0.61'/%3E%3Cpath d='M283 17 l-5.6 25' stroke-opacity='0.54'/%3E%3Cpath d='M50 44 l-3.4 16' stroke-opacity='0.88'/%3E%3Cpath d='M61 215 l-4.7 22' stroke-opacity='0.59'/%3E%3Cpath d='M163 23 l-2.4 11' stroke-opacity='0.48'/%3E%3Cpath d='M201 158 l-3.4 16' stroke-opacity='0.73'/%3E%3Cpath d='M137 111 l-5.3 24' stroke-opacity='0.8'/%3E%3Cpath d='M78 213 l-4.3 19' stroke-opacity='0.92'/%3E%3Cpath d='M214 107 l-6.1 28' stroke-opacity='0.43'/%3E%3Cpath d='M127 280 l-2.8 13' stroke-opacity='0.67'/%3E%3Cpath d='M21 247 l-5.2 24' stroke-opacity='0.72'/%3E%3Cpath d='M255 116 l-5.0 23' stroke-opacity='0.74'/%3E%3Cpath d='M172 169 l-5.5 25' stroke-opacity='0.96'/%3E%3Cpath d='M143 246 l-2.4 11' stroke-opacity='0.81'/%3E%3Cpath d='M191 367 l-5.5 25' stroke-opacity='0.53'/%3E%3Cpath d='M118 247 l-2.3 10' stroke-opacity='0.65'/%3E%3Cpath d='M57 43 l-2.4 11' stroke-opacity='0.85'/%3E%3Cpath d='M46 92 l-3.7 17' stroke-opacity='0.92'/%3E%3C/g%3E%3C/svg%3E");
+  animation: sf-fall-rain linear infinite;
+}
+.sf-rain-far {
+  background-size: 210px 280px;
+  opacity: 0.14;
+  animation-duration: 1.2s;
+  --rain-dx: -62px;
+  --rain-dy: 280px;
+}
+.sf-rain-near {
+  background-size: 360px 480px;
+  opacity: 0.22;
+  animation-duration: 0.8s;
+  --rain-dx: -106px;
+  --rain-dy: 480px;
+}
+.sf-rain-heavy {
+  background-size: 270px 360px;
+  opacity: 0.24;
+  animation-duration: 0.6s;
+  --rain-dx: -80px;
+  --rain-dy: 360px;
+}
+
+@keyframes sf-fall-rain {
+  from { background-position: 0 0; }
+  to   { background-position: var(--rain-dx) var(--rain-dy); }
+}
+
+/* Distant lightning: a brief double flicker lighting the clouds every ~12s. */
+.sf-lightning {
+  background:
+    radial-gradient(ellipse 70% 50% at 28% 12%, rgba(206, 214, 255, 0.55), transparent 70%),
+    linear-gradient(to bottom, rgba(170, 180, 230, 0.16), rgba(170, 180, 230, 0.04) 70%, transparent);
+  opacity: 0;
+  animation: sf-lightning 12s ease-out infinite;
+  animation-delay: 3s;
+}
+
+@keyframes sf-lightning {
+  0%, 60%  { opacity: 0; }
+  61%      { opacity: 0.9; }
+  62%      { opacity: 0.15; }
+  63.5%    { opacity: 0.7; }
+  67%, 100% { opacity: 0; }
+}
+
+.sf-flake {
+  animation: sf-snowfall linear infinite;
+}
+
+@keyframes sf-snowfall {
+  0%   { transform: translate3d(0, 0, 0); }
+  50%  { transform: translate3d(var(--sway), 52vh, 0); }
+  100% { transform: translate3d(calc(var(--sway) * -0.5), 104vh, 0); }
+}
+
+/* Fog: a general veil plus soft bands drifting across the horizon. */
+.sf-fog-veil {
+  background: linear-gradient(to bottom, transparent 20%, rgba(148, 160, 182, 0.08) 55%, rgba(148, 160, 182, 0.14) 72%, rgba(148, 160, 182, 0.06) 100%);
+}
+
+.sf-fog {
+  left: -50vw;
+  width: 200vw;
+  background: radial-gradient(ellipse 50% 50% at 50% 50%, rgba(170, 182, 204, 0.16), transparent 70%);
+  filter: blur(30px);
+  animation: sf-fog-drift ease-in-out infinite alternate;
+}
+
+@keyframes sf-fog-drift {
+  from { transform: translateX(-12vw); }
+  to   { transform: translateX(12vw); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sf-star,
+  .sf-cloud,
+  .sf-reflection,
+  .sf-ripple,
+  .sf-rain,
+  .sf-fog {
+    animation: none;
+  }
+  /* No flashing, and no falling snow, for people who asked for less motion. */
+  .sf-lightning,
+  .sf-flake {
+    display: none;
+  }
 }
