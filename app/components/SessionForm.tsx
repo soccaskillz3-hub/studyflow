@@ -62,7 +62,7 @@ export default function SessionForm({
   const endSuggestion = fromMinutes(toMinutes(start || startSuggestion) + 60);
 
   const inputClass =
-    "border-b border-white/30 bg-transparent px-1 py-2 text-white placeholder:text-white/45 outline-none transition focus:border-cyan-300 [color-scheme:dark]";
+    "border-b border-white/30 bg-transparent px-1 py-2 text-white placeholder:text-white/45 outline-none transition focus:border-scene [color-scheme:dark]";
 
   return (
     <form onSubmit={submit}>
@@ -87,7 +87,7 @@ export default function SessionForm({
               type="checkbox"
               checked={isBreak}
               onChange={(e) => setIsBreak(e.target.checked)}
-              className="h-3.5 w-3.5 accent-cyan-300"
+              className="h-3.5 w-3.5 accent-scene"
             />
             Break
           </label>
@@ -103,7 +103,7 @@ export default function SessionForm({
             )}
             <button
               type="submit"
-              className="border border-cyan-300/70 px-5 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-cyan-100 transition hover:bg-cyan-300/15 active:scale-[0.98]"
+              className="border border-scene/70 px-5 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-scene-ink transition hover:bg-scene/15 active:scale-[0.98]"
             >
               Add
             </button>

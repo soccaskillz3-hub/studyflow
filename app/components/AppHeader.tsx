@@ -3,6 +3,7 @@
 import Link from "next/link";
 import {usePathname} from "next/navigation";
 import {useCallback, useRef, useState} from "react";
+import MuteButton from "./MuteButton";
 import SettingsMenu from "./SettingsMenu";
 import {useDismiss} from "../lib/useDismiss";
 
@@ -13,7 +14,7 @@ const CALENDAR_PAGES = [
 
 const tabClass = (active: boolean) =>
   `-mb-px flex items-center gap-2 border-b-2 pb-3 text-xs uppercase tracking-[0.3em] transition ${
-    active ? "border-cyan-300 text-cyan-100" : "border-transparent text-white/60 hover:text-white"
+    active ? "border-scene text-scene-ink" : "border-transparent text-white/60 hover:text-white"
   }`;
 
 // "Calendar" opens a menu of the calendar pages instead of navigating straight away.
@@ -97,6 +98,7 @@ export default function AppHeader() {
               {todayShort}
             </span>
           </p>
+          <MuteButton />
           <SettingsMenu />
         </div>
       </header>

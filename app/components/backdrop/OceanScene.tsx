@@ -1,17 +1,11 @@
-import type {CSSProperties} from "react";
-import type {TimeOfDay, Weather} from "../lib/weather";
+import Rainbow from "./Rainbow";
+import {rand} from "../../lib/random";
+import type {TimeOfDay, Weather} from "../../lib/weather";
 
-// Sky-over-water scene rendered behind the whole app, varied by time of day and weather.
-// Time of day sets the palette (CSS variables keyed off data-time in globals.css);
-// weather layers cloud, veil, rain, snow or fog on top.
-// Purely decorative: fixed, non-interactive and hidden from assistive tech.
-
-// Deterministic pseudo-random so the scene is identical on server and client.
-// Rounded so tiny floating-point differences between JS engines can't cause hydration mismatches.
-function rand(i: number, n: number) {
-  const x = Math.sin(i * 12.9898 + n * 78.233) * 43758.5453;
-  return Math.round((x - Math.floor(x)) * 1000) / 1000;
-}
+// The ocean theme: open sky over rolling water, varied by time of day and weather.
+// Time of day sets the palette (CSS variables keyed off data-time in globals.css); weather
+// thickens the cloud, dims the sun or moon and stirs the water. Rain, snow, fog and lightning
+// are drawn on top by <WeatherLayers>, shared with the other themes.
 
 const STARS = Array.from({length: 70}, (_, i) => ({
   left: rand(i, 1) * 100,
@@ -20,15 +14,6 @@ const STARS = Array.from({length: 70}, (_, i) => ({
   opacity: 0.2 + rand(i, 4) * 0.45,
   delay: rand(i, 5) * -10,
   duration: 5 + rand(i, 6) * 7,
-}));
-
-const SNOWFLAKES = Array.from({length: 90}, (_, i) => ({
-  left: rand(i, 7) * 100,
-  size: 1.5 + rand(i, 8) * 2.5,
-  opacity: 0.35 + rand(i, 9) * 0.5,
-  delay: rand(i, 10) * -20,
-  duration: 12 + rand(i, 11) * 14,
-  sway: 10 + rand(i, 12) * 30,
 }));
 
 const CLOUDS = [
@@ -77,12 +62,6 @@ const RIPPLES = [
   {bottom: 6, opacity: 0.06, duration: 96, scale: 2.6},
 ];
 
-const FOG_BANDS = [
-  {top: 50, height: 22, opacity: 0.9, duration: 140, delay: -30},
-  {top: 62, height: 18, opacity: 1, duration: 110, delay: -80},
-  {top: 74, height: 20, opacity: 0.8, duration: 170, delay: -10},
-];
-
 // How visible each light source is at each time of day (0–1).
 const TIMES: Record<TimeOfDay, {stars: number; sun: number; moon: number}> = {
   sunrise: {stars: 0.1, sun: 1, moon: 0},
@@ -105,32 +84,25 @@ const WEATHER: Record<
     haze: number;
     reflection: number;
     ripples: number;
-    dark: number;
   }
 > = {
-  clear: {stars: 1, body: 1, bodyBlur: 0, clouds: 1, overcast: 0, veil: 0, haze: 1, reflection: 1, ripples: 1, dark: 0},
-  cloudy: {stars: 0.2, body: 0.35, bodyBlur: 8, clouds: 1, overcast: 0.75, veil: 0.45, haze: 0.5, reflection: 0.3, ripples: 0.8, dark: 0},
-  rain: {stars: 0, body: 0, bodyBlur: 12, clouds: 0.6, overcast: 1, veil: 0.65, haze: 0.25, reflection: 0, ripples: 1.6, dark: 0.15},
-  storm: {stars: 0, body: 0, bodyBlur: 12, clouds: 0.4, overcast: 1, veil: 0.8, haze: 0.15, reflection: 0, ripples: 2, dark: 0.35},
-  snow: {stars: 0.1, body: 0.25, bodyBlur: 10, clouds: 0.8, overcast: 0.7, veil: 0.5, haze: 0.6, reflection: 0.15, ripples: 0.5, dark: 0},
-  fog: {stars: 0.05, body: 0.35, bodyBlur: 14, clouds: 0.3, overcast: 0.3, veil: 0.55, haze: 0.2, reflection: 0.2, ripples: 0.4, dark: 0},
+  clear: {stars: 1, body: 1, bodyBlur: 0, clouds: 1, overcast: 0, veil: 0, haze: 1, reflection: 1, ripples: 1},
+  cloudy: {stars: 0.2, body: 0.35, bodyBlur: 8, clouds: 1, overcast: 0.75, veil: 0.45, haze: 0.5, reflection: 0.3, ripples: 0.8},
+  rain: {stars: 0, body: 0, bodyBlur: 12, clouds: 0.6, overcast: 1, veil: 0.65, haze: 0.25, reflection: 0, ripples: 1.6},
+  storm: {stars: 0, body: 0, bodyBlur: 12, clouds: 0.4, overcast: 1, veil: 0.8, haze: 0.15, reflection: 0, ripples: 2},
+  snow: {stars: 0.1, body: 0.25, bodyBlur: 10, clouds: 0.8, overcast: 0.7, veil: 0.5, haze: 0.6, reflection: 0.15, ripples: 0.5},
+  fog: {stars: 0.05, body: 0.35, bodyBlur: 14, clouds: 0.3, overcast: 0.3, veil: 0.55, haze: 0.2, reflection: 0.2, ripples: 0.4},
 };
 
 const fade = "transition-opacity duration-[1800ms] ease-in-out";
 
-export default function Backdrop({weather, time, visible}: {weather: Weather; time: TimeOfDay; visible: boolean}) {
+export default function OceanScene({weather, time, rainbow}: {weather: Weather; time: TimeOfDay; rainbow: number | null}) {
   const w = WEATHER[weather];
   const t = TIMES[time];
   const raining = weather === "rain" || weather === "storm";
 
   return (
-    <div
-      aria-hidden
-      data-weather={weather}
-      data-time={time}
-      className="sf-scene pointer-events-none fixed inset-0 -z-10 overflow-hidden transition-opacity duration-700"
-      style={{opacity: visible ? 1 : 0}}
-    >
+    <div data-weather={weather} data-time={time} className="sf-scene absolute inset-0 overflow-hidden">
       {/* One sky per time of day, cross-faded so changes are smooth. */}
       {(Object.keys(TIMES) as TimeOfDay[]).map((k) => (
         <div key={k} className={`sf-sky-${k} absolute inset-0 ${fade}`} style={{opacity: k === time ? 1 : 0}} />
@@ -198,6 +170,8 @@ export default function Backdrop({weather, time, visible}: {weather: Weather; ti
         ))}
       </div>
 
+      {rainbow !== null && <Rainbow key={rainbow} time={time} />}
+
       <div className={`sf-haze absolute inset-x-0 ${fade}`} style={{opacity: w.haze}} />
 
       <div className="sf-water absolute inset-x-0 bottom-0">
@@ -239,64 +213,8 @@ export default function Backdrop({weather, time, visible}: {weather: Weather; ti
         <div className={`sf-water-veil absolute inset-0 ${fade}`} style={{opacity: w.veil * 0.4}} />
       </div>
 
-      {weather === "fog" && (
-        <div className="sf-enter absolute inset-0">
-          <div className="sf-fog-veil absolute inset-0" />
-          {FOG_BANDS.map((b, i) => (
-            <div
-              key={i}
-              className="sf-fog absolute"
-              style={{
-                top: `${b.top}%`,
-                height: `${b.height}vh`,
-                opacity: b.opacity,
-                animationDuration: `${b.duration}s`,
-                animationDelay: `${b.delay}s`,
-              }}
-            />
-          ))}
-        </div>
-      )}
-
-      {raining && (
-        <div className="sf-enter absolute inset-0">
-          <div className="sf-rain sf-rain-far absolute inset-0" />
-          <div className="sf-rain sf-rain-near absolute inset-0" />
-          {weather === "storm" && <div className="sf-rain sf-rain-heavy absolute inset-0" />}
-        </div>
-      )}
-
-      <div className={`absolute inset-0 bg-[#02040a] ${fade}`} style={{opacity: w.dark}} />
-
-      {weather === "storm" && <div className="sf-lightning absolute inset-0" />}
-
-      {weather === "snow" && (
-        <div className="sf-enter absolute inset-0">
-          {SNOWFLAKES.map((f, i) => (
-            <span
-              key={i}
-              className="sf-flake absolute -top-4 rounded-full bg-slate-100"
-              style={
-                {
-                  left: `${f.left}%`,
-                  width: f.size,
-                  height: f.size,
-                  opacity: f.opacity,
-                  filter: f.size > 3 ? "blur(1px)" : undefined,
-                  animationDuration: `${f.duration}s`,
-                  animationDelay: `${f.delay}s`,
-                  "--sway": `${f.sway}px`,
-                } as CSSProperties
-              }
-            />
-          ))}
-        </div>
-      )}
-
       {/* Gentle darkening behind the content column so floating text stays readable on bright skies. */}
       <div className="sf-scrim absolute inset-0" />
-      <div className="sf-grain absolute inset-0" />
-      <div className="sf-vignette absolute inset-0" />
     </div>
   );
 }

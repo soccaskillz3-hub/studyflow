@@ -103,8 +103,8 @@ export default function TimePicker({value, onChange, label, suggestion, align = 
           if (rect) setOpenUp(window.innerHeight - rect.bottom < 300 && rect.top > 300);
           setOpen((o) => !o);
         }}
-        className={`flex w-full items-center justify-between gap-2 border-b px-1 py-2 text-left tabular-nums outline-none transition focus-visible:border-cyan-300 ${
-          open ? "border-cyan-300" : "border-white/30 hover:border-white/60"
+        className={`flex w-full items-center justify-between gap-2 border-b px-1 py-2 text-left tabular-nums outline-none transition focus-visible:border-scene ${
+          open ? "border-scene" : "border-white/30 hover:border-white/60"
         }`}
       >
         <span className={`truncate whitespace-nowrap ${value ? "text-white" : "text-white/45"}`}>{value ? formatTime(value) : "--:-- --"}</span>
@@ -162,14 +162,14 @@ export default function TimePicker({value, onChange, label, suggestion, align = 
             />
           </div>
           <div className="mt-2 flex items-center justify-between border-t border-dashed border-white/15 px-1 pt-2">
-            <span className="text-xs text-cyan-200 tabular-nums">{formatTime(fromParts(hour12, minute, pm))}</span>
+            <span className="text-xs text-scene-soft tabular-nums">{formatTime(fromParts(hour12, minute, pm))}</span>
             <button
               type="button"
               onClick={() => {
                 onChange(fromParts(hour12, minute, pm));
                 close();
               }}
-              className="border border-cyan-300/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-cyan-100 transition hover:bg-cyan-300/15"
+              className="border border-scene/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-scene-ink transition hover:bg-scene/15"
             >
               Done
             </button>

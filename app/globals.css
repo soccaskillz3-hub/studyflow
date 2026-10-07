@@ -10,8 +10,52 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-display: var(--font-instrument-serif);
+  --font-display: var(--font-timer);
+  --color-scene: var(--accent);
+  --color-scene-soft: var(--accent-soft);
+  --color-scene-ink: var(--accent-ink);
 }
+
+/* The timer's display face follows the theme, for a different feel in each: thin, airy and
+   modern by the ocean; chunky, soft and storybook in the forest. Each face gets its own digit
+   cell width so the countdown doesn't jitter as numbers change. */
+:root {
+  --font-timer: var(--font-jost);
+  --timer-digit: 0.6em;
+  --timer-colon: 0.3em;
+}
+:root .font-display {
+  font-weight: 200;
+  letter-spacing: -0.01em;
+}
+:root[data-theme="forest"] {
+  --font-timer: var(--font-fraunces);
+  --timer-digit: 0.66em;
+  --timer-colon: 0.32em;
+}
+:root[data-theme="forest"] .font-display {
+  font-weight: 560;
+  letter-spacing: 0;
+  font-variation-settings: "SOFT" 100, "WONK" 1;
+}
+
+/* ---------- Accent colour ----------
+   One accent (progress bar, links, buttons, the timer) that changes with the scene, picked to
+   stand out against that sky rather than blend into it: gold against a blue day, aqua against a
+   warm sunrise, cyan in the dark. Used through Tailwind as scene / scene-soft / scene-ink. */
+
+@property --accent { syntax: "<color>"; inherits: true; initial-value: #67e8f9; }
+@property --accent-soft { syntax: "<color>"; inherits: true; initial-value: #a5f3fc; }
+@property --accent-ink { syntax: "<color>"; inherits: true; initial-value: #ecfeff; }
+@property --accent-glow { syntax: "<color>"; inherits: true; initial-value: rgba(103, 232, 249, 0.7); }
+
+:root[data-time="sunrise"] { --accent: #6ee7d8; --accent-soft: #a7f3e8; --accent-ink: #e6fffb; --accent-glow: rgba(110, 231, 216, 0.6); }
+:root[data-time="day"]     { --accent: #ffd772; --accent-soft: #ffe6a6; --accent-ink: #fff6dc; --accent-glow: rgba(255, 215, 114, 0.6); }
+:root[data-time="dusk"]    { --accent: #ffb38a; --accent-soft: #ffd0b5; --accent-ink: #fff0e6; --accent-glow: rgba(255, 179, 138, 0.55); }
+:root[data-theme="forest"][data-time="sunrise"] { --accent: #9ff0c4; --accent-soft: #c6f7dc; --accent-ink: #effff6; --accent-glow: rgba(159, 240, 196, 0.55); }
+:root[data-theme="forest"][data-time="day"]     { --accent: #ffd27a; --accent-soft: #ffe3a8; --accent-ink: #fff5dd; --accent-glow: rgba(255, 210, 122, 0.55); }
+:root[data-theme="forest"][data-time="dusk"]    { --accent: #9fe1ff; --accent-soft: #c5edff; --accent-ink: #effaff; --accent-glow: rgba(159, 225, 255, 0.55); }
+:root[data-theme="forest"][data-time="night"]   { --accent: #d4f36b; --accent-soft: #e6f9a6; --accent-ink: #f8ffe0; --accent-glow: rgba(212, 243, 107, 0.6); }
 
 body {
   background: var(--background);
@@ -49,6 +93,18 @@ body {
   }
 }
 
+/* Calendar: the session happening now. Solid enough that the now line, which runs behind the
+   blocks, doesn't show through; the time already gone is a soft fill with a faded edge. */
+.sf-block-current {
+  background:
+    linear-gradient(color-mix(in srgb, var(--accent) 14%, transparent), color-mix(in srgb, var(--accent) 14%, transparent)),
+    rgba(7, 13, 24, 0.82);
+}
+.sf-block-elapsed {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 10px), transparent);
+}
+
 /* ---------- Themed panels ----------
    Menus and popovers take their colors from the scene: SceneProvider sets data-time and
    data-weather on <html>. Time of day sets the base tint; weather layers a wash on top. */
@@ -61,7 +117,8 @@ body {
 @property --panel-wash { syntax: "<color>"; inherits: true; initial-value: transparent; }
 
 :root {
-  transition-property: --panel, --panel-edge, --panel-glow, --panel-accent, --panel-accent-edge, --panel-wash;
+  transition-property: --panel, --panel-edge, --panel-glow, --panel-accent, --panel-accent-edge, --panel-wash,
+    --accent, --accent-soft, --accent-ink, --accent-glow;
   transition-duration: 1800ms;
   transition-timing-function: ease-in-out;
 }
@@ -122,8 +179,8 @@ body {
 .sf-focus {
   --focus-tint: rgba(4, 8, 20, 0.55);
   --focus-ink: #f8fafc;
-  --focus-glow: rgba(103, 232, 249, 0.35);
-  --focus-accent: #67e8f9;
+  --focus-glow: color-mix(in srgb, var(--accent-glow) 60%, transparent);
+  --focus-accent: var(--accent);
   background:
     radial-gradient(ellipse 70% 55% at 50% 45%, transparent 0%, var(--focus-tint) 100%),
     linear-gradient(var(--focus-tint), var(--focus-tint));
@@ -143,9 +200,30 @@ body {
   --focus-accent: #fdba8c;
 }
 .sf-focus[data-phase="complete"] {
-  --focus-ink: #ecfeff;
-  --focus-glow: rgba(103, 232, 249, 0.6);
+  --focus-ink: var(--accent-ink);
+  --focus-glow: var(--accent-glow);
 }
+
+/* Snow piling up on the timer screen while it snows (SnowPile in the focus page). */
+@property --pile { syntax: "<number>"; inherits: true; initial-value: 0; }
+.sf-focus-snow {
+  --pile: 0;
+  height: calc(9vh * var(--pile));
+  opacity: min(1, calc(var(--pile) * 4));
+  /* Dimmed to sit inside the timer screen's darker tint rather than glare against it. */
+  fill: color-mix(in srgb, var(--snow-tone) 70%, #1b2434);
+  filter: drop-shadow(0 -2px 8px rgba(255, 255, 255, 0.12));
+  transition: --pile 20s ease-in;
+}
+.sf-focus-snow[data-snowing="true"] {
+  --pile: 1;
+  transition: --pile 600s cubic-bezier(0.25, 0, 0.6, 1);
+}
+.sf-focus-snow-sheen { fill: rgba(255, 255, 255, 0.22); }
+:root { --snow-tone: #a9b5c9; }
+:root[data-time="sunrise"] { --snow-tone: #efdfdc; }
+:root[data-time="day"] { --snow-tone: #e6eef4; }
+:root[data-time="dusk"] { --snow-tone: #d3c2d1; }
 
 .sf-focus-time {
   margin-top: 0.15em;
@@ -227,8 +305,8 @@ body {
 /* Today, arriving from a finished session: the bar glows while it fills, and the gain floats up. */
 .sf-bar-boost { animation: sf-bar-boost 1.6s ease-in-out 2; }
 @keyframes sf-bar-boost {
-  0%, 100% { box-shadow: 0 0 14px rgba(103, 232, 249, 0.7); }
-  50% { box-shadow: 0 0 28px rgba(103, 232, 249, 1), 0 0 60px rgba(103, 232, 249, 0.5); }
+  0%, 100% { box-shadow: 0 0 14px var(--accent-glow); }
+  50% { box-shadow: 0 0 28px var(--accent), 0 0 60px var(--accent-glow); }
 }
 .sf-gain { animation: sf-gain 2.8s ease-out forwards; }
 @keyframes sf-gain {
@@ -694,6 +772,549 @@ body {
   to   { transform: translateX(12vw); }
 }
 
+/* ---------- Backdrop wrapper ----------
+   Shared weather (fog, rain, lightning, snow) sits on the wrapper, outside the themes, so its
+   fog colour is set here per time of day and theme. */
+
+/* Snow settles slowly while it snows (about 2½ minutes to full cover) and melts faster when it
+   stops. --snow-depth (0–1) drives the forest's ground cover, drifts and caps on the trees.
+   .sf-instant skips that on first load, so a page opened mid-snowfall starts already white. */
+@property --snow-depth { syntax: "<number>"; inherits: true; initial-value: 0; }
+
+.sf-backdrop {
+  --snow-depth: 0;
+  transition: opacity 700ms, --fog 1800ms ease-in-out, --snow-depth 25s ease-in;
+}
+.sf-backdrop[data-weather="snow"] {
+  --snow-depth: 1;
+  transition: opacity 700ms, --fog 1800ms ease-in-out, --snow-depth 150s cubic-bezier(0.3, 0, 0.6, 1);
+}
+.sf-backdrop.sf-instant {
+  transition: opacity 700ms;
+}
+.sf-backdrop[data-time="sunrise"] { --fog: rgba(232, 208, 204, 0.24); }
+.sf-backdrop[data-time="day"]     { --fog: rgba(228, 234, 242, 0.32); }
+.sf-backdrop[data-time="dusk"]    { --fog: rgba(170, 182, 204, 0.16); }
+.sf-backdrop[data-time="night"]   { --fog: rgba(140, 150, 172, 0.12); }
+.sf-backdrop[data-theme="forest"][data-time="sunrise"] { --fog: rgba(236, 214, 196, 0.26); }
+.sf-backdrop[data-theme="forest"][data-time="day"]     { --fog: rgba(214, 232, 220, 0.3); }
+.sf-backdrop[data-theme="forest"][data-time="dusk"]    { --fog: rgba(190, 160, 170, 0.18); }
+.sf-backdrop[data-theme="forest"][data-time="night"]   { --fog: rgba(120, 140, 160, 0.14); }
+
+/* A rainbow after the rain (see Rainbow.tsx): a wide arc rising from the horizon at the right,
+   blended into the sky, its legs fading out low down. Fainter in the low light of sunrise and dusk. */
+.sf-rainbow {
+  width: 150vmin;
+  aspect-ratio: 1;
+  left: calc(64% - 75vmin);
+  top: calc(80% - 75vmin);
+  mix-blend-mode: screen;
+  filter: blur(5px);
+  mask-image: linear-gradient(to bottom, #000 28%, transparent 60%);
+  animation: sf-rainbow 42s ease-in-out forwards;
+}
+.sf-rainbow::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  opacity: var(--rainbow-strength, 0.75);
+  background: radial-gradient(
+    closest-side,
+    transparent 80%,
+    rgba(150, 90, 230, 0.45) 82%,
+    rgba(90, 130, 255, 0.45) 84.5%,
+    rgba(90, 215, 150, 0.45) 87%,
+    rgba(255, 236, 120, 0.5) 89.5%,
+    rgba(255, 165, 85, 0.45) 92%,
+    rgba(255, 90, 95, 0.4) 94.5%,
+    transparent 97%
+  );
+}
+.sf-rainbow-sunrise, .sf-rainbow-dusk { --rainbow-strength: 0.5; }
+@keyframes sf-rainbow {
+  0%       { opacity: 0; }
+  15%, 72% { opacity: 1; }
+  100%     { opacity: 0; }
+}
+
+/* ---------- Forest theme ---------- */
+
+@property --tree-1 { syntax: "<color>"; inherits: true; initial-value: #050a12; }
+@property --tree-2 { syntax: "<color>"; inherits: true; initial-value: #09121f; }
+@property --tree-3 { syntax: "<color>"; inherits: true; initial-value: #0e1a2c; }
+@property --tree-4 { syntax: "<color>"; inherits: true; initial-value: #142238; }
+@property --ground-top { syntax: "<color>"; inherits: true; initial-value: #070c15; }
+@property --ground-bottom { syntax: "<color>"; inherits: true; initial-value: #03060b; }
+@property --ray { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --glow { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --haze-f { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --veil-f { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --mist { syntax: "<color>"; inherits: true; initial-value: transparent; }
+@property --animal { syntax: "<color>"; inherits: true; initial-value: #050a12; }
+@property --owl { syntax: "<color>"; inherits: true; initial-value: #3a3442; }
+
+.sf-forest {
+  --mote: rgba(255, 246, 214, 0.9);
+  --firefly: #f4ff9a;
+  --firefly-glow: rgba(214, 255, 110, 0.75);
+  transition-property: --tree-1, --tree-2, --tree-3, --tree-4, --ground-top, --ground-bottom, --ray, --glow, --haze-f,
+    --veil-f, --mist, --animal, --owl, --scrim;
+  transition-duration: 1800ms;
+  transition-timing-function: ease-in-out;
+}
+
+/* Far trees are paler and take on the sky's colour; near ones are almost silhouettes. */
+.sf-forest[data-time="sunrise"] {
+  --tree-1: #1a1726;
+  --tree-2: #362f4a;
+  --tree-3: #5e4f6c;
+  --tree-4: #8d7389;
+  --ground-top: #241d2c;
+  --ground-bottom: #120f19;
+  --ray: rgba(255, 206, 150, 0.32);
+  --glow: rgba(255, 186, 120, 0.7);
+  --haze-f: rgba(255, 196, 170, 0.45);
+  --veil-f: rgba(120, 110, 130, 0.6);
+  --mist: rgba(255, 220, 200, 0.32);
+  --animal: #120f1b;
+  --owl: #3d3446;
+  --scrim: rgba(20, 14, 34, 0.5);
+}
+.sf-forest[data-time="day"] {
+  --tree-1: #0f2219;
+  --tree-2: #234536;
+  --tree-3: #3f6b58;
+  --tree-4: #6f978a;
+  --ground-top: #1b3326;
+  --ground-bottom: #0c1a13;
+  --ray: rgba(255, 250, 214, 0.3);
+  --glow: rgba(255, 250, 220, 0.6);
+  --haze-f: rgba(214, 236, 220, 0.4);
+  --veil-f: rgba(110, 125, 130, 0.6);
+  --mist: rgba(230, 245, 235, 0.22);
+  --animal: #0b1912;
+  --owl: #2f3a34;
+  --scrim: rgba(6, 22, 16, 0.5);
+}
+.sf-forest[data-time="dusk"] {
+  --tree-1: #100c19;
+  --tree-2: #241a33;
+  --tree-3: #3d2b48;
+  --tree-4: #63405f;
+  --ground-top: #1a1222;
+  --ground-bottom: #0b0812;
+  --ray: rgba(255, 162, 110, 0.26);
+  --glow: rgba(255, 140, 90, 0.55);
+  --haze-f: rgba(214, 130, 140, 0.35);
+  --veil-f: rgba(60, 50, 70, 0.6);
+  --mist: rgba(210, 150, 160, 0.18);
+  --animal: #0b0812;
+  --owl: #3a2f44;
+  --scrim: rgba(10, 6, 20, 0.3);
+}
+.sf-forest[data-time="night"] {
+  --tree-1: #04070e;
+  --tree-2: #081120;
+  --tree-3: #0e1a2e;
+  --tree-4: #15253c;
+  --ground-top: #08101b;
+  --ground-bottom: #03060b;
+  --ray: rgba(170, 196, 255, 0.14);
+  --glow: rgba(180, 200, 255, 0.28);
+  --haze-f: rgba(90, 110, 150, 0.25);
+  --veil-f: rgba(20, 26, 38, 0.6);
+  --mist: rgba(130, 150, 190, 0.12);
+  --animal: #02050b;
+  --owl: #33343f;
+  --scrim: rgba(2, 4, 12, 0.12);
+}
+
+.sf-fsky-sunrise { background: linear-gradient(to bottom, #2a2d55 0%, #6b5a80 28%, #d68f7c 52%, #f2c08c 68%, #f7dba6 82%); }
+.sf-fsky-day     { background: linear-gradient(to bottom, #3f7aa0 0%, #6fa2bd 32%, #a8c9c6 60%, #c6dcc8 80%); }
+.sf-fsky-dusk    { background: linear-gradient(to bottom, #1c1a38 0%, #4a2f54 32%, #a1546c 58%, #de8a60 78%); }
+.sf-fsky-night   { background: linear-gradient(to bottom, #02040c 0%, #071026 50%, #0d1a33 80%); }
+
+/* Where the light comes from: the sun or moon is behind the canopy at the top right. */
+.sf-forest-glow {
+  background: radial-gradient(ellipse 50% 42% at 86% 2%, var(--glow), transparent 72%);
+}
+.sf-forest-haze {
+  top: 42%;
+  height: 32%;
+  background: linear-gradient(to bottom, transparent, var(--haze-f) 55%, transparent);
+}
+.sf-forest-veil {
+  background: linear-gradient(to bottom, var(--veil-f), color-mix(in srgb, var(--veil-f) 60%, transparent));
+}
+
+/* Light shafts: a tall box hung from the top right and tipped to the light's angle. Each beam
+   is soft-edged, fades out toward the ground and slowly widens and narrows. */
+.sf-rays {
+  top: -14%;
+  right: -10%;
+  width: 92%;
+  height: 160%;
+  transform-origin: 100% 0;
+  transform: rotate(var(--ray-angle, 30deg));
+  mix-blend-mode: screen;
+  filter: blur(var(--ray-blur, 6px));
+  transition: transform 1800ms ease-in-out, opacity 1800ms ease-in-out, filter 1800ms ease-in-out;
+}
+.sf-ray {
+  background: linear-gradient(to right, transparent, var(--ray) 35%, var(--ray) 65%, transparent);
+  mask-image: linear-gradient(to bottom, transparent 2%, #000 14%, #000 42%, transparent 88%);
+  transform-origin: 50% 0;
+  animation: sf-ray-breathe ease-in-out infinite alternate;
+}
+@keyframes sf-ray-breathe {
+  from { scale: 0.75 1; translate: -6% 0; }
+  to   { scale: 1.2 1; translate: 6% 0; }
+}
+
+.sf-mote {
+  background: var(--mote);
+  box-shadow: 0 0 4px var(--mote);
+  opacity: 0;
+  animation: sf-mote-float linear infinite;
+}
+@keyframes sf-mote-float {
+  0%   { translate: 0 0; opacity: 0; }
+  20%  { opacity: 0.9; }
+  80%  { opacity: 0.6; }
+  100% { translate: var(--drift) -140px; opacity: 0; }
+}
+
+.sf-forest-floor {
+  height: max(9vw, 15vh);
+  background: linear-gradient(to bottom, transparent, var(--ground-top) 32%, var(--ground-bottom));
+}
+.sf-snow-cap { fill: var(--snow-cap); }
+.sf-forest[data-time="sunrise"] { --snow-cap: #f6e4df; }
+.sf-forest[data-time="day"] { --snow-cap: #eef4f7; }
+.sf-forest[data-time="dusk"] { --snow-cap: #d8c3d3; }
+.sf-forest[data-time="night"] { --snow-cap: #9aa7bd; }
+.sf-snow-front {
+  height: calc(max(3.8vw, 6.5vh) * (0.4 + 0.6 * var(--snow-depth)));
+  opacity: var(--snow-depth);
+  background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--snow-cap) 55%, transparent) 45%, color-mix(in srgb, var(--snow-cap) 70%, transparent));
+}
+.sf-snow-cover {
+  height: calc(max(7vw, 12vh) * (0.5 + 0.5 * var(--snow-depth)));
+  opacity: var(--snow-depth);
+  background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--snow-cap) 35%, transparent) 45%, color-mix(in srgb, var(--snow-cap) 52%, transparent));
+}
+.sf-mist {
+  left: -50vw;
+  width: 200vw;
+  background: radial-gradient(ellipse 50% 50% at 50% 50%, var(--mist), transparent 70%);
+  filter: blur(24px);
+  animation: sf-fog-drift ease-in-out infinite alternate;
+}
+
+.sf-near {
+  width: clamp(170px, 24vw, 420px);
+  fill: var(--tree-1);
+}
+/* On phones the near trunks would fill half the screen: slim them toward their edge. */
+@media (max-width: 640px) {
+  .sf-near-left { transform: scaleX(0.55); transform-origin: 0 100%; }
+  .sf-near-right { transform: scaleX(0.55); transform-origin: 100% 100%; }
+}
+/* Must match LIMBS_FIT in forestShapes.ts: hide limbs where the screen would crop them. */
+@media not ((min-aspect-ratio: 5/4) and (min-width: 720px)) {
+  .sf-limb { display: none; }
+}
+.sf-canopy {
+  height: clamp(150px, 30vh, 320px);
+  fill: var(--tree-1);
+  overflow: visible;
+  transform-origin: 50% 0;
+  animation: sf-canopy-sway 12s ease-in-out infinite alternate;
+}
+@keyframes sf-canopy-sway {
+  from { translate: -0.4% 0; skew: -0.4deg 0; }
+  to   { translate: 0.4% 0; skew: 0.4deg 0; }
+}
+.sf-undergrowth {
+  height: clamp(70px, 15vh, 160px);
+  fill: var(--tree-1);
+  overflow: visible;
+  transform-origin: 50% 100%;
+  animation: sf-sway 5s ease-in-out infinite alternate;
+}
+.sf-undergrowth-1 { animation-duration: 6.5s; animation-delay: -2s; }
+@keyframes sf-sway {
+  from { skew: -1.4deg 0; }
+  to   { skew: 1.4deg 0; }
+}
+
+.sf-firefly {
+  width: 4px;
+  height: 4px;
+  background: var(--firefly);
+  box-shadow: 0 0 6px 2px var(--firefly-glow), 0 0 16px 5px color-mix(in srgb, var(--firefly-glow) 35%, transparent);
+  animation: sf-firefly-drift ease-in-out infinite alternate, sf-firefly-blink ease-in-out infinite;
+}
+@keyframes sf-firefly-drift {
+  from { translate: 0 0; }
+  to   { translate: var(--dx) var(--dy); }
+}
+@keyframes sf-firefly-blink {
+  0%, 40%, 100% { opacity: 0.04; }
+  52%           { opacity: 1; }
+  66%           { opacity: 0.15; }
+}
+
+/* ---------- Forest wildlife ---------- */
+
+/* Animals take a little colour from the trees around them, so they sit in the scene rather
+   than on top of it, while staying darker than the band behind them (they stand in front of it).
+   Fog needs nothing extra: the fog layer already drifts over them. */
+.sf-wildlife {
+  --animal-tone: color-mix(in srgb, var(--animal) 75%, var(--tree-2));
+  color: var(--animal-tone);
+  fill: var(--animal-tone);
+}
+
+/* A soft shadow where the animal stands. */
+.sf-shadow {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: -3%;
+  height: 9%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.55), transparent);
+  filter: blur(2px);
+}
+.sf-forest[data-weather="snow"] .sf-shadow { background: radial-gradient(closest-side, rgba(40, 52, 80, 0.45), transparent); }
+
+/* Ground animals stand on the forest floor, just in front of the nearest band of trees. */
+.sf-ground {
+  bottom: max(3.4vw, 5.5vh);
+}
+.sf-deer { width: clamp(96px, 10vw, 170px); }
+.sf-rabbit { width: clamp(30px, 3vw, 46px); }
+.sf-fox { width: clamp(72px, 7vw, 120px); }
+
+/* Arriving and leaving: slide in from (and back out to) the side the animal came from. */
+.sf-phase-in { animation: sf-arrive linear both; }
+.sf-phase-out { animation: sf-depart linear both; }
+@keyframes sf-arrive {
+  from { translate: calc(var(--dir) * -45vw) 0; }
+  to   { translate: 0 0; }
+}
+@keyframes sf-depart {
+  from { translate: 0 0; }
+  to   { translate: calc(var(--dir) * -45vw) 0; }
+}
+.sf-crossing { animation: sf-cross linear both; }
+@keyframes sf-cross {
+  from { translate: calc(50vw - var(--dir) * 62vw) 0; }
+  to   { translate: calc(50vw + var(--dir) * 62vw) 0; }
+}
+
+/* Legs swing in alternating pairs while walking; the body bobs with each stride. */
+.sf-phase-in .sf-leg-a, .sf-phase-out .sf-leg-a, .sf-fox .sf-leg-a { animation: sf-stride 0.72s ease-in-out infinite alternate; }
+.sf-phase-in .sf-leg-b, .sf-phase-out .sf-leg-b, .sf-fox .sf-leg-b { animation: sf-stride 0.72s ease-in-out -0.36s infinite alternate; }
+.sf-fox .sf-leg-a, .sf-fox .sf-leg-b { animation-duration: 0.36s; }
+.sf-fox .sf-leg-b { animation-delay: -0.18s; }
+@keyframes sf-stride {
+  from { rotate: -14deg; }
+  to   { rotate: 14deg; }
+}
+.sf-deer.sf-phase-in svg, .sf-deer.sf-phase-out svg { animation: sf-bob 0.36s ease-in-out infinite alternate; }
+.sf-fox svg { animation: sf-bob 0.18s ease-in-out infinite alternate; }
+@keyframes sf-bob {
+  from { translate: 0 0; }
+  to   { translate: 0 -1.5%; }
+}
+.sf-fox-tail { animation: sf-tail 0.9s ease-in-out infinite alternate; }
+@keyframes sf-tail {
+  from { rotate: -4deg; }
+  to   { rotate: 6deg; }
+}
+
+/* Grazing: head down to the grass, up to look around, down again. */
+.sf-phase-graze .sf-deer-head { animation: sf-graze 14s ease-in-out both; }
+@keyframes sf-graze {
+  0%       { rotate: 0deg; }
+  12%, 44% { rotate: 108deg; }
+  52%, 62% { rotate: 12deg; }
+  70%, 92% { rotate: 108deg; }
+  100%     { rotate: 0deg; }
+}
+
+.sf-rabbit.sf-phase-in svg, .sf-rabbit.sf-phase-out svg { animation: sf-hop 0.55s ease-in-out infinite; }
+@keyframes sf-hop {
+  0%, 85%, 100% { translate: 0 0; }
+  40%           { translate: 0 -28%; }
+}
+.sf-phase-sit .sf-rabbit-ear { animation: sf-ear 3.2s ease-in-out infinite; }
+@keyframes sf-ear {
+  0%, 70%, 100% { rotate: 0deg; }
+  76%           { rotate: -12deg; }
+  82%           { rotate: 4deg; }
+}
+
+.sf-flock-bird {
+  width: clamp(16px, 1.7vw, 26px);
+  animation: sf-glide 3s ease-in-out infinite alternate;
+}
+.sf-bird path {
+  transform-origin: 20px 10px;
+  animation: sf-flap 0.3s ease-in-out infinite alternate;
+}
+@keyframes sf-glide {
+  from { translate: 0 0; }
+  to   { translate: 0 18px; }
+}
+@keyframes sf-flap {
+  from { scale: 1 1; }
+  to   { scale: 1 -0.5; }
+}
+
+.sf-bat-flier {
+  width: clamp(22px, 2.2vw, 34px);
+  animation: sf-flutter 1.4s ease-in-out infinite;
+}
+.sf-bat path {
+  transform-origin: 20px 9px;
+  animation: sf-flap 0.11s ease-in-out infinite alternate;
+}
+@keyframes sf-flutter {
+  0%, 100% { translate: 0 0; }
+  25%      { translate: 14px -22px; }
+  50%      { translate: -6px 10px; }
+  75%      { translate: 10px -8px; }
+}
+
+.sf-butterflies { width: 0; height: 0; }
+.sf-butterfly-flier {
+  width: clamp(14px, 1.3vw, 20px);
+  animation: sf-flit 18s ease-in-out both;
+}
+@keyframes sf-flit {
+  0%   { translate: 0 30px; opacity: 0; }
+  10%  { opacity: 1; }
+  25%  { translate: 60px -40px; }
+  45%  { translate: 140px 0; }
+  65%  { translate: 90px -70px; }
+  85%  { translate: 180px -30px; opacity: 1; }
+  100% { translate: 240px -110px; opacity: 0; }
+}
+.sf-wing-l, .sf-wing-r { animation: sf-wing 0.16s ease-in-out infinite alternate; }
+@keyframes sf-wing {
+  from { scale: 1 1; }
+  to   { scale: 0.25 1; }
+}
+
+/* The owl sits on its branch in front of the near trees, glows its eyes and blinks. */
+.sf-owl {
+  z-index: 1;
+  fill: var(--owl);
+  color: var(--owl);
+}
+.sf-owl.sf-phase-arrive { animation: sf-fade-in 2.5s ease-out both; }
+.sf-owl.sf-phase-leave { animation: sf-fade-out 2.5s ease-in both; }
+@keyframes sf-fade-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+.sf-owl-eye {
+  fill: #f3b43c;
+  filter: drop-shadow(0 0 3px rgba(255, 186, 80, 0.85));
+}
+.sf-owl-pupil {
+  fill: #140d05;
+  animation: sf-glance 9s ease-in-out infinite;
+}
+.sf-owl-beak { fill: #8a6a3a; }
+.sf-owl-lids {
+  fill: var(--owl);
+  scale: 1 0;
+  animation: sf-blink 5.5s ease-in-out infinite;
+}
+@keyframes sf-blink {
+  0%, 90%, 100% { scale: 1 0; }
+  94%           { scale: 1 1; }
+}
+@keyframes sf-glance {
+  0%, 40%, 100% { translate: 0 0; }
+  50%, 70%      { translate: -1.4px 0; }
+  78%, 90%      { translate: 1.2px 0; }
+}
+
+/* ---------- Forest-tinted menus ---------- */
+
+:root[data-theme="forest"][data-time="sunrise"] {
+  --panel: rgba(42, 34, 52, 0.82);
+  --panel-edge: rgba(247, 196, 150, 0.3);
+  --panel-glow: rgba(240, 170, 120, 0.16);
+}
+:root[data-theme="forest"][data-time="day"] {
+  --panel: rgba(16, 44, 32, 0.8);
+  --panel-edge: rgba(190, 230, 200, 0.3);
+  --panel-glow: rgba(200, 240, 190, 0.14);
+  --panel-accent: rgba(190, 236, 200, 0.18);
+  --panel-accent-edge: rgba(200, 240, 210, 0.55);
+}
+:root[data-theme="forest"][data-time="dusk"] {
+  --panel: rgba(26, 18, 34, 0.84);
+  --panel-edge: rgba(220, 150, 130, 0.28);
+}
+:root[data-theme="forest"]:not([data-time="sunrise"]):not([data-time="day"]):not([data-time="dusk"]) {
+  --panel: rgba(5, 12, 18, 0.86);
+  --panel-edge: rgba(150, 200, 180, 0.2);
+  --panel-glow: rgba(120, 200, 170, 0.1);
+}
+
+/* ---------- Volume sliders ---------- */
+
+.sf-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 18px;
+  background: transparent;
+  cursor: pointer;
+  --fill: 50%;
+}
+.sf-range:disabled { cursor: default; opacity: 0.4; }
+.sf-range::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 9999px;
+  background: linear-gradient(to right, var(--accent) var(--fill), rgba(255, 255, 255, 0.18) var(--fill));
+}
+.sf-range::-moz-range-track {
+  height: 3px;
+  border-radius: 9999px;
+  background: linear-gradient(to right, var(--accent) var(--fill), rgba(255, 255, 255, 0.18) var(--fill));
+}
+.sf-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -5.5px;
+  border-radius: 9999px;
+  background: var(--accent-ink);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent), 0 0 10px var(--accent-glow);
+  transition: box-shadow 150ms;
+}
+.sf-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 0;
+  border-radius: 9999px;
+  background: var(--accent-ink);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent), 0 0 10px var(--accent-glow);
+}
+.sf-range:focus-visible { outline: none; }
+.sf-range:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 55%, transparent), 0 0 12px var(--accent-glow); }
+.sf-range:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 55%, transparent), 0 0 12px var(--accent-glow); }
+
 @media (prefers-reduced-motion: reduce) {
   .sf-star,
   .sf-cloud,
@@ -702,12 +1323,20 @@ body {
   .sf-reflection,
   .sf-ripple,
   .sf-rain,
-  .sf-fog {
+  .sf-fog,
+  .sf-ray,
+  .sf-mist,
+  .sf-canopy,
+  .sf-undergrowth,
+  .sf-firefly {
     animation: none;
   }
-  /* No flashing, and no falling snow, for people who asked for less motion. */
+  .sf-firefly { opacity: 0.6; }
+  /* No flashing, falling snow, drifting dust or roaming animals for people who asked for less motion. */
   .sf-lightning,
-  .sf-flake {
+  .sf-flake,
+  .sf-mote,
+  .sf-wildlife {
     display: none;
   }
 }

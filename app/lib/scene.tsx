@@ -1,22 +1,26 @@
 "use client";
 
 import {createContext, useContext, useEffect, useState, type ReactNode} from "react";
-import Backdrop from "../components/Backdrop";
+import Backdrop from "../components/backdrop/Backdrop";
+import {THEME_IDS, type Theme} from "./themes";
 import {fetchWeather, timeOfDay, TIMES, WEATHERS, type SunTimes, type TimeOfDay, type Weather} from "./weather";
 
 export type SceneStatus = "locating" | "live" | "denied" | "error";
 
+const THEME_KEY = "studyflow:theme";
 const WEATHER_OVERRIDE_KEY = "studyflow:weather-override";
 const TIME_OVERRIDE_KEY = "studyflow:time-override";
 const REFRESH_MS = 30 * 60 * 1000;
 
 type Scene = {
+  theme: Theme;
   weather: Weather; // what's showing: the override if set, else live weather
   time: TimeOfDay;
   live: Weather | null; // weather at the visitor's location, once known
   status: SceneStatus;
   weatherOverride: Weather | null; // null = automatic
   timeOverride: TimeOfDay | null;
+  chooseTheme: (theme: Theme) => void;
   chooseWeather: (weather: Weather | null) => void;
   chooseTime: (time: TimeOfDay | null) => void;
 };
@@ -41,11 +45,13 @@ function writeOverride(key: string, value: string | null) {
   }
 }
 
-// Works out the scene (live weather + time of day, or the visitor's chosen overrides), draws the
-// backdrop, and shares the scene with the rest of the app so menus can match it and change it.
+// Works out the scene (the chosen theme, with live weather + time of day or the visitor's
+// overrides), draws the backdrop, and shares the scene with the rest of the app so menus can
+// match it and change it.
 export function SceneProvider({children}: {children: ReactNode}) {
   const [live, setLive] = useState<{weather: Weather; sun: SunTimes | null} | null>(null);
   const [status, setStatus] = useState<SceneStatus>("locating");
+  const [theme, setTheme] = useState<Theme>("ocean");
   const [weatherOverride, setWeatherOverride] = useState<Weather | null>(null);
   const [timeOverride, setTimeOverride] = useState<TimeOfDay | null>(null);
   // Null until mounted: the server can't know the visitor's local time, so the scene
@@ -55,6 +61,7 @@ export function SceneProvider({children}: {children: ReactNode}) {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- read the client clock and saved settings once mounted
     setNow(new Date());
+    setTheme(readOverride(THEME_KEY, THEME_IDS) ?? "ocean");
     setWeatherOverride(readOverride(WEATHER_OVERRIDE_KEY, WEATHERS));
     setTimeOverride(readOverride(TIME_OVERRIDE_KEY, TIMES));
     const id = setInterval(() => setNow(new Date()), 60 * 1000);
@@ -97,10 +104,15 @@ export function SceneProvider({children}: {children: ReactNode}) {
 
   // Expose the scene on <html> so CSS can theme panels and menus to match the sky.
   useEffect(() => {
+    document.documentElement.dataset.theme = theme;
     document.documentElement.dataset.weather = weather;
     document.documentElement.dataset.time = time;
-  }, [weather, time]);
+  }, [theme, weather, time]);
 
+  const chooseTheme = (t: Theme) => {
+    setTheme(t);
+    writeOverride(THEME_KEY, t);
+  };
   const chooseWeather = (w: Weather | null) => {
     setWeatherOverride(w);
     writeOverride(WEATHER_OVERRIDE_KEY, w);
@@ -113,17 +125,19 @@ export function SceneProvider({children}: {children: ReactNode}) {
   return (
     <SceneContext
       value={{
+        theme,
         weather,
         time,
         live: live?.weather ?? null,
         status,
         weatherOverride,
         timeOverride,
+        chooseTheme,
         chooseWeather,
         chooseTime,
       }}
     >
-      <Backdrop weather={weather} time={time} visible={now !== null} />
+      <Backdrop theme={theme} weather={weather} time={time} visible={now !== null} />
       {children}
     </SceneContext>
   );

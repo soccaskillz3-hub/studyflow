@@ -1,7 +1,7 @@
 "use client";
 
 import {useCallback, useEffect, useRef, useState} from "react";
-import {chime} from "./sounds";
+import {chime} from "./audio/sfx";
 
 // The focus timer is stored as timestamps rather than a ticking counter, so it keeps
 // correct time across reloads, background tabs and leaving the page.

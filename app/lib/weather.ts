@@ -4,6 +4,10 @@ export type TimeOfDay = "sunrise" | "day" | "dusk" | "night";
 export const WEATHERS: Weather[] = ["clear", "cloudy", "rain", "storm", "snow", "fog"];
 export const TIMES: TimeOfDay[] = ["sunrise", "day", "dusk", "night"];
 
+// Lightning flickers at 61% of a 12 s cycle that starts 3 s after a storm begins (must match
+// .sf-lightning in globals.css). The soundscape uses this to time thunder to the flashes.
+export const LIGHTNING = {delayMs: 3000, cycleMs: 12000, flashAt: 0.61};
+
 export type SunTimes = {sunrise: number; sunset: number}; // epoch ms
 
 // Maps WMO weather interpretation codes (used by Open-Meteo) to a backdrop scene.

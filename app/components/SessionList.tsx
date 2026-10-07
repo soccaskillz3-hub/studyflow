@@ -30,10 +30,10 @@ export default function SessionList({empty, removable = false}: {empty: ReactNod
               <span
                 className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition ${
                   done
-                    ? "border-cyan-300 bg-cyan-300 text-slate-900"
+                    ? "border-scene bg-scene text-slate-900"
                     : session.isBreak
                       ? "border-dashed border-white/50"
-                      : "border-white/60 group-hover:border-cyan-300"
+                      : "border-white/60 group-hover:border-scene"
                 }`}
               >
                 {done && (
@@ -44,7 +44,7 @@ export default function SessionList({empty, removable = false}: {empty: ReactNod
               </span>
               <span
                 className={`hidden w-44 shrink-0 text-sm tabular-nums sm:block ${
-                  done ? "text-white/40" : session.isBreak ? "text-white/60" : "text-cyan-200"
+                  done ? "text-white/40" : session.isBreak ? "text-white/60" : "text-scene-soft"
                 }`}
               >
                 {formatTime(session.start)} – {formatTime(session.end)}
@@ -57,7 +57,7 @@ export default function SessionList({empty, removable = false}: {empty: ReactNod
                 >
                   {session.subject}
                 </span>
-                <span className="mt-0.5 block text-xs text-cyan-200/90 tabular-nums sm:hidden">
+                <span className="mt-0.5 block text-xs text-scene-soft/90 tabular-nums sm:hidden">
                   {formatTime(session.start)} – {formatTime(session.end)}
                 </span>
               </span>

@@ -142,7 +142,7 @@ export default function CalendarPage() {
         <p className="text-3xl font-semibold tracking-tight tabular-nums">
           {now === null ? " " : formatTime(fromMinutes(now))}
         </p>
-        <p className="text-sm text-cyan-200">{status}</p>
+        <p className="text-sm text-scene-soft">{status}</p>
       </div>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
         <p className="text-sm text-white/60">
@@ -151,7 +151,7 @@ export default function CalendarPage() {
         <button
           type="button"
           onClick={() => openComposer(now === null ? 9 * 60 : Math.ceil((now + 1) / SNAP) * SNAP)}
-          className="border border-cyan-300/70 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.25em] text-cyan-100 transition hover:bg-cyan-300/15 active:scale-[0.98]"
+          className="border border-scene/70 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.25em] text-scene-ink transition hover:bg-scene/15 active:scale-[0.98]"
         >
           + Add
         </button>
@@ -167,7 +167,7 @@ export default function CalendarPage() {
                 return (
                   <span
                     key={h}
-                    className={`absolute -translate-y-1/2 text-[11px] tabular-nums ${isNow ? "text-cyan-200" : "text-white/55"}`}
+                    className={`absolute -translate-y-1/2 text-[11px] tabular-nums ${isNow ? "text-scene-soft" : "text-white/55"}`}
                     style={{top: top(h * 60)}}
                   >
                     {formatHour(h)}
@@ -207,7 +207,7 @@ export default function CalendarPage() {
               {/* Where a click would add a session */}
               {hover !== null && (
                 <div
-                  className="pointer-events-none absolute inset-x-1 flex items-center rounded-md border border-dashed border-cyan-300/50 bg-cyan-300/[0.06] px-2.5 text-[11px] text-cyan-200/90 tabular-nums"
+                  className="pointer-events-none absolute inset-x-1 flex items-center rounded-md border border-dashed border-scene/50 bg-scene/[0.06] px-2.5 text-[11px] text-scene-soft/90 tabular-nums"
                   style={{top: top(hover) + 1, height: 2 * SNAP * PX_PER_MIN - 2}}
                   aria-hidden
                 >
@@ -226,13 +226,13 @@ export default function CalendarPage() {
                   <div
                     key={session.id}
                     data-block
-                    className={`group absolute overflow-hidden rounded-md border backdrop-blur-sm transition hover:brightness-125 ${
+                    className={`group absolute z-[2] overflow-hidden rounded-md border backdrop-blur-sm transition hover:brightness-125 ${
                       done
-                        ? "border-cyan-300/40 bg-cyan-300/15"
+                        ? "border-scene/40 bg-scene/15"
                         : session.isBreak
                           ? "border-dashed border-white/35 bg-white/[0.04]"
                           : isCurrent
-                            ? "border-cyan-300 bg-cyan-300/20 shadow-[0_0_18px_rgba(103,232,249,0.35)]"
+                            ? "sf-block-current border-scene shadow-[0_0_18px_var(--accent-glow)]"
                             : isPast
                               ? "border-white/20 bg-white/[0.05]"
                               : "border-white/35 bg-slate-900/40"
@@ -244,12 +244,21 @@ export default function CalendarPage() {
                       width: `calc(${100 / lanes}% - 6px)`,
                     }}
                   >
+                    {/* The part of the current session already gone, as a soft fill rather than
+                        the now line cutting through the block and its Start button. */}
+                    {isCurrent && (
+                      <span
+                        className="sf-block-elapsed pointer-events-none absolute inset-x-0 top-0"
+                        style={{height: Math.min((now - start) * PX_PER_MIN, height)}}
+                        aria-hidden
+                      />
+                    )}
                     <button
                       type="button"
                       onClick={() => toggle(session.id)}
                       aria-pressed={done}
                       aria-label={`${session.subject}, ${formatTime(session.start)} to ${formatTime(session.end)}${done ? ", done" : ""}`}
-                      className={`flex h-full w-full min-w-0 px-2.5 text-left ${
+                      className={`relative flex h-full w-full min-w-0 px-2.5 text-left ${
                         compact ? "items-center gap-2 py-0.5" : "flex-col py-1.5"
                       } ${canStart ? "pr-[4.75rem]" : ""}`}
                     >
@@ -261,7 +270,7 @@ export default function CalendarPage() {
                         {session.subject}
                       </span>
                       <span
-                        className={`block truncate text-[11px] tabular-nums ${done || isPast ? "text-white/45" : "text-cyan-200/90"}`}
+                        className={`block truncate text-[11px] tabular-nums ${done || isPast ? "text-white/45" : "text-scene-soft/90"}`}
                       >
                         {formatTime(session.start)} – {formatTime(session.end)}
                       </span>
@@ -270,7 +279,7 @@ export default function CalendarPage() {
                       <Link
                         href={`/focus/${session.id}`}
                         aria-label={`Start a focus timer for ${session.subject}`}
-                        className={`absolute right-1.5 rounded border border-cyan-300/60 bg-slate-950/40 px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] text-cyan-100 transition hover:bg-cyan-300/20 ${
+                        className={`absolute right-1.5 rounded border border-scene/60 bg-slate-950/75 px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] text-scene-ink transition hover:bg-scene/20 ${
                           compact ? "top-1/2 -translate-y-1/2" : "top-1.5"
                         }`}
                       >
@@ -285,27 +294,28 @@ export default function CalendarPage() {
               {draftValid && (
                 <div
                   ref={ghost}
-                  className="pointer-events-none absolute inset-x-1 z-[5] overflow-hidden rounded-md border-2 border-dashed border-cyan-300 bg-cyan-300/10 px-2.5 py-1 shadow-[0_0_18px_rgba(103,232,249,0.3)]"
+                  className="pointer-events-none absolute inset-x-1 z-[5] overflow-hidden rounded-md border-2 border-dashed border-scene bg-scene/10 px-2.5 py-1 shadow-[0_0_18px_var(--accent-glow)]"
                   style={{top: top(draftStart) + 1, height: Math.max((draftEnd - draftStart) * PX_PER_MIN, 22) - 2}}
                   aria-hidden
                 >
-                  <span className="block truncate text-sm text-cyan-100">New session</span>
-                  <span className="block truncate text-[11px] text-cyan-200/90 tabular-nums">
+                  <span className="block truncate text-sm text-scene-ink">New session</span>
+                  <span className="block truncate text-[11px] text-scene-soft/90 tabular-nums">
                     {formatTime(draft!.start)} – {formatTime(draft!.end)}
                   </span>
                 </div>
               )}
 
-              {/* Current time */}
+              {/* Current time. It runs behind the session blocks (they sit above it), so it
+                  never crosses a session's text or buttons. */}
               {now !== null && (
                 <div
                   ref={nowLine}
-                  className="pointer-events-none absolute inset-x-0 z-10 -translate-y-1/2"
+                  className="pointer-events-none absolute inset-x-0 z-[1] -translate-y-1/2"
                   style={{top: top(now)}}
                   aria-hidden
                 >
-                  <div className="h-[2px] bg-cyan-300 shadow-[0_0_10px_rgba(103,232,249,0.8)]" />
-                  <div className="absolute -left-1 top-1/2 h-2.5 w-2.5 -translate-y-1/2 rounded-full bg-cyan-200 shadow-[0_0_10px_rgba(103,232,249,0.9)]" />
+                  <div className="h-[2px] bg-scene shadow-[0_0_10px_var(--accent-glow)]" />
+                  <div className="absolute -left-1 top-1/2 h-2.5 w-2.5 -translate-y-1/2 rounded-full bg-scene-soft shadow-[0_0_10px_var(--accent-glow)]" />
                 </div>
               )}
             </div>

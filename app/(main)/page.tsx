@@ -64,7 +64,7 @@ function ProgressLine({
     <div className="relative mt-10 h-14">
       <div className="absolute inset-x-0 top-5 h-px bg-white/30" />
       <div
-        className={`absolute left-0 top-[19px] h-[3px] rounded-full bg-cyan-300 shadow-[0_0_14px_rgba(103,232,249,0.7)] transition-all ${speed} ease-out ${
+        className={`absolute left-0 top-[19px] h-[3px] rounded-full bg-scene shadow-[0_0_14px_var(--accent-glow)] transition-all ${speed} ease-out ${
           gain ? "sf-bar-boost" : ""
         }`}
         style={{width: `${pct}%`}}
@@ -74,12 +74,12 @@ function ProgressLine({
         style={{left: `${pct}%`}}
       >
         {gain !== null && (
-          <span className="sf-gain absolute -top-7 left-1/2 whitespace-nowrap rounded-full border border-cyan-300/60 bg-cyan-300/15 px-2 py-0.5 text-[11px] text-cyan-100 tabular-nums">
+          <span className="sf-gain absolute -top-7 left-1/2 whitespace-nowrap rounded-full border border-scene/60 bg-scene/15 px-2 py-0.5 text-[11px] text-scene-ink tabular-nums">
             +{formatMinutes(gain)}
           </span>
         )}
-        <span className="text-[10px] tracking-[0.2em] text-cyan-200">{Math.round(pct)}%</span>
-        <span className="mt-1 h-2.5 w-2.5 rounded-full bg-cyan-200 shadow-[0_0_10px_rgba(103,232,249,0.9)]" />
+        <span className="text-[10px] tracking-[0.2em] text-scene-soft">{Math.round(pct)}%</span>
+        <span className="mt-1 h-2.5 w-2.5 rounded-full bg-scene-soft shadow-[0_0_10px_var(--accent-glow)]" />
       </div>
       {hourTicks(planned).map((t, i, all) => {
         const left = planned === 0 ? 0 : (t / planned) * 100;
@@ -105,7 +105,7 @@ function ProgressLine({
   );
 }
 
-const linkClass = "text-cyan-200 underline decoration-cyan-300/40 underline-offset-4 transition hover:text-cyan-100";
+const linkClass = "text-scene-soft underline decoration-scene/40 underline-offset-4 transition hover:text-scene-ink";
 
 export default function Today() {
   const {sessions, completed} = useSchedule();
@@ -148,7 +148,7 @@ export default function Today() {
           <p className="text-6xl font-semibold leading-none tracking-tight tabular-nums sm:text-7xl">
             {formatMinutes(Math.round(shownDone))}
           </p>
-          <p className="pb-1.5 text-sm text-cyan-200 tabular-nums">of {formatMinutes(plannedMinutes)} planned</p>
+          <p className="pb-1.5 text-sm text-scene-soft tabular-nums">of {formatMinutes(plannedMinutes)} planned</p>
         </div>
         <ProgressLine
           done={targetDone}
@@ -156,7 +156,7 @@ export default function Today() {
           gain={celebration && settled ? celebration.minutes : null}
           instant={resetting}
         />
-        <p className="mt-2 text-[11px] uppercase tracking-[0.3em] text-cyan-200">
+        <p className="mt-2 text-[11px] uppercase tracking-[0.3em] text-scene-soft">
           {studySessions.length === 0
             ? "No study sessions yet"
             : `${doneCount} of ${studySessions.length} sessions done · ${percent}%`}
@@ -170,12 +170,12 @@ export default function Today() {
             <>
               <p className="text-3xl font-semibold tracking-tight">{nextSession.subject}</p>
               <div className="flex items-center gap-4">
-                <p className="text-sm text-cyan-200 tabular-nums">
+                <p className="text-sm text-scene-soft tabular-nums">
                   {formatTime(nextSession.start)} – {formatTime(nextSession.end)}
                 </p>
                 <Link
                   href={`/focus/${nextSession.id}`}
-                  className="border border-cyan-300/70 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.25em] text-cyan-100 transition hover:bg-cyan-300/15 active:scale-[0.98]"
+                  className="border border-scene/70 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.25em] text-scene-ink transition hover:bg-scene/15 active:scale-[0.98]"
                 >
                   Start?
                 </Link>

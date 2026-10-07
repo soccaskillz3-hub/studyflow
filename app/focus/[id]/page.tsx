@@ -3,9 +3,12 @@
 import Link from "next/link";
 import {useParams, useRouter} from "next/navigation";
 import {useEffect, useState, type CSSProperties, type FormEvent} from "react";
+import MuteButton from "../../components/MuteButton";
+import SettingsMenu from "../../components/SettingsMenu";
 import {stashCelebration} from "../../lib/celebrate";
+import {useScene} from "../../lib/scene";
 import {sessionMinutes, useSchedule} from "../../lib/schedule";
-import {success} from "../../lib/sounds";
+import {success} from "../../lib/audio/sfx";
 import {useFocusTimer, type Phase} from "../../lib/timer";
 import {formatMinutes, formatTime, fromMinutes, nowMinutes} from "../../lib/time";
 
@@ -43,6 +46,19 @@ function Celebration({subject, minutes}: {subject: string; minutes: number | nul
   );
 }
 
+// While it snows, a drift slowly piles up along the bottom of the screen over the session (about
+// ten minutes to its full height), and melts away when the snow stops (see .sf-focus-snow).
+function SnowPile({snowing}: {snowing: boolean}) {
+  return (
+    <div aria-hidden data-snowing={snowing} className="sf-focus-snow pointer-events-none absolute inset-x-0 bottom-0">
+      <svg viewBox="0 0 1000 100" preserveAspectRatio="none" className="h-full w-full">
+        <path d="M0 58 C90 34 190 52 300 40 C420 26 520 54 640 42 C760 30 880 50 1000 36 V100 H0 Z" />
+        <path className="sf-focus-snow-sheen" d="M0 58 C90 34 190 52 300 40 C420 26 520 54 640 42 C760 30 880 50 1000 36 V44 C880 58 760 38 640 50 C520 62 420 34 300 48 C190 60 90 42 0 66 Z" />
+      </svg>
+    </div>
+  );
+}
+
 // "mm:ss", or "h:mm:ss" from an hour up.
 function clock(ms: number) {
   const total = Math.ceil(ms / 1000);
@@ -53,7 +69,8 @@ function clock(ms: number) {
   return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
 }
 
-// The serif's digits have different widths; fixed-width cells keep the time from jittering as it counts.
+// The display faces' digits have different widths; fixed-width cells (sized per theme in
+// globals.css) keep the time from jittering as it counts.
 function BigTime({text, phase}: {text: string; phase: Phase}) {
   return (
     <p
@@ -63,11 +80,11 @@ function BigTime({text, phase}: {text: string; phase: Phase}) {
     >
       {[...text].map((ch, i) =>
         ch === ":" ? (
-          <span key={i} className="sf-focus-colon inline-block w-[0.32em] text-center">
+          <span key={i} className="sf-focus-colon inline-block w-[var(--timer-colon)] text-center">
             :
           </span>
         ) : (
-          <span key={i} className="inline-block w-[0.56em] text-center">
+          <span key={i} className="inline-block w-[var(--timer-digit)] text-center">
             {ch}
           </span>
         ),
@@ -145,8 +162,9 @@ function BreakPicker({onStart, onCancel}: {onStart: (minutes: number) => void; o
   );
 }
 
+// A soft dark glass backing keeps the controls readable over anything behind them, snow included.
 const controlClass = (primary = false) =>
-  `min-w-28 px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.25em] transition active:scale-[0.98] ${
+  `min-w-28 bg-slate-950/35 px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.25em] backdrop-blur-sm transition active:scale-[0.98] ${
     primary
       ? "sf-focus-primary border"
       : "border border-white/30 text-white/85 hover:border-white/60 hover:text-white"
@@ -157,6 +175,7 @@ export default function FocusPage() {
   const router = useRouter();
   const {sessions, completed, loaded, toggle} = useSchedule();
   const session = sessions.find((s) => s.id === id);
+  const {weather} = useScene();
   const timer = useFocusTimer(session ? session.id : null, session ? sessionMinutes(session) : 0);
   const [picking, setPicking] = useState(false);
   // After "Done": celebrate, fade out, then land on Today where the progress animates up.
@@ -219,6 +238,7 @@ export default function FocusPage() {
   };
 
   if (!loaded) return <div className="sf-focus fixed inset-0" />;
+  const snowing = weather === "snow";
 
   if (!session) {
     return (
@@ -251,19 +271,24 @@ export default function FocusPage() {
       className={`sf-focus fixed inset-0 flex flex-col font-mono text-white transition-opacity duration-500 ${leaving ? "opacity-0" : ""}`}
       data-phase={celebrating ? "complete" : phase}
     >
-      <header className="flex items-center justify-between gap-4 px-5 pt-6 sm:px-10 sm:pt-8">
+      <SnowPile snowing={snowing} />
+      <header className="relative flex items-center justify-between gap-4 px-5 pt-6 sm:px-10 sm:pt-8">
         <Link
           href="/calendar"
           className="flex items-center gap-2 text-[11px] uppercase tracking-[0.3em] text-white/70 transition hover:text-white"
         >
           <span aria-hidden>←</span> Calendar
         </Link>
-        <p className="text-[11px] uppercase tracking-[0.3em] text-white/60 tabular-nums">
-          {formatTime(session.start)} – {formatTime(session.end)}
-        </p>
+        <div className="flex items-center gap-5">
+          <p className="hidden text-[11px] uppercase tracking-[0.3em] text-white/60 tabular-nums sm:block">
+            {formatTime(session.start)} – {formatTime(session.end)}
+          </p>
+          <MuteButton />
+          <SettingsMenu />
+        </div>
       </header>
 
-      <main className="flex flex-1 flex-col items-center justify-center px-5 text-center">
+      <main className="relative flex flex-1 flex-col items-center justify-center px-5 text-center">
         {celebrating ? (
           <Celebration subject={session.subject} minutes={celebrating.minutes} />
         ) : (
@@ -283,7 +308,7 @@ export default function FocusPage() {
         )}
       </main>
 
-      <footer className="flex flex-col items-center gap-4 px-5 pb-10 sm:pb-14">
+      <footer className="relative flex flex-col items-center gap-4 px-5 pb-10 sm:pb-14">
         {picking && (
           <BreakPicker
             onStart={(m) => {
