@@ -1,10 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import {useCallback, useEffect, useRef, useState} from "react";
-import SectionLabel from "../components/SectionLabel";
-import SessionForm from "../components/SessionForm";
-import {useSchedule, type Session} from "../lib/schedule";
-import {formatHour, formatMinutes, formatTime, fromMinutes, nowMinutes, toMinutes} from "../lib/time";
+import SectionLabel from "../../components/SectionLabel";
+import SessionForm from "../../components/SessionForm";
+import {useSchedule, type Session} from "../../lib/schedule";
+import {formatHour, formatMinutes, formatTime, fromMinutes, nowMinutes, toMinutes} from "../../lib/time";
 
 const HOUR_PX = 72;
 const PX_PER_MIN = HOUR_PX / 60;
@@ -220,17 +221,12 @@ export default function CalendarPage() {
                 const isPast = now !== null && end <= now;
                 const height = Math.max((end - start) * PX_PER_MIN, 22);
                 const compact = height < 44;
+                const canStart = !done && !session.isBreak;
                 return (
-                  <button
+                  <div
                     key={session.id}
-                    type="button"
                     data-block
-                    onClick={() => toggle(session.id)}
-                    aria-pressed={done}
-                    aria-label={`${session.subject}, ${formatTime(session.start)} to ${formatTime(session.end)}${done ? ", done" : ""}`}
-                    className={`absolute overflow-hidden rounded-md border px-2.5 text-left backdrop-blur-sm transition hover:brightness-125 ${
-                      compact ? "flex items-center gap-2 py-0.5" : "py-1.5"
-                    } ${
+                    className={`group absolute overflow-hidden rounded-md border backdrop-blur-sm transition hover:brightness-125 ${
                       done
                         ? "border-cyan-300/40 bg-cyan-300/15"
                         : session.isBreak
@@ -248,19 +244,40 @@ export default function CalendarPage() {
                       width: `calc(${100 / lanes}% - 6px)`,
                     }}
                   >
-                    <span
-                      className={`block truncate text-sm ${
-                        done ? "text-white/55 line-through" : session.isBreak || isPast ? "text-white/65" : "text-white"
-                      }`}
+                    <button
+                      type="button"
+                      onClick={() => toggle(session.id)}
+                      aria-pressed={done}
+                      aria-label={`${session.subject}, ${formatTime(session.start)} to ${formatTime(session.end)}${done ? ", done" : ""}`}
+                      className={`flex h-full w-full min-w-0 px-2.5 text-left ${
+                        compact ? "items-center gap-2 py-0.5" : "flex-col py-1.5"
+                      } ${canStart ? "pr-[4.75rem]" : ""}`}
                     >
-                      {session.subject}
-                    </span>
-                    <span
-                      className={`block truncate text-[11px] tabular-nums ${done || isPast ? "text-white/45" : "text-cyan-200/90"}`}
-                    >
-                      {formatTime(session.start)} – {formatTime(session.end)}
-                    </span>
-                  </button>
+                      <span
+                        className={`block truncate text-sm ${
+                          done ? "text-white/55 line-through" : session.isBreak || isPast ? "text-white/65" : "text-white"
+                        }`}
+                      >
+                        {session.subject}
+                      </span>
+                      <span
+                        className={`block truncate text-[11px] tabular-nums ${done || isPast ? "text-white/45" : "text-cyan-200/90"}`}
+                      >
+                        {formatTime(session.start)} – {formatTime(session.end)}
+                      </span>
+                    </button>
+                    {canStart && (
+                      <Link
+                        href={`/focus/${session.id}`}
+                        aria-label={`Start a focus timer for ${session.subject}`}
+                        className={`absolute right-1.5 rounded border border-cyan-300/60 bg-slate-950/40 px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] text-cyan-100 transition hover:bg-cyan-300/20 ${
+                          compact ? "top-1/2 -translate-y-1/2" : "top-1.5"
+                        }`}
+                      >
+                        Start?
+                      </Link>
+                    )}
+                  </div>
                 );
               })}
 

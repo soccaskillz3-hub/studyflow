@@ -10,6 +10,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-instrument-serif);
 }
 
 body {
@@ -107,6 +108,148 @@ body {
 .sf-panel-active {
   background-color: var(--panel-accent);
   box-shadow: inset 0 0 0 1px var(--panel-accent-edge);
+}
+
+/* ---------- Focus timer ----------
+   Full-screen over the scene. Each phase has its own mood: cool and crisp for focus,
+   dimmed when paused, warm, italic and slowly breathing on a break. */
+
+@property --focus-tint { syntax: "<color>"; inherits: true; initial-value: rgba(4, 8, 20, 0.55); }
+@property --focus-ink { syntax: "<color>"; inherits: true; initial-value: #f8fafc; }
+@property --focus-glow { syntax: "<color>"; inherits: true; initial-value: rgba(103, 232, 249, 0.35); }
+@property --focus-accent { syntax: "<color>"; inherits: true; initial-value: #67e8f9; }
+
+.sf-focus {
+  --focus-tint: rgba(4, 8, 20, 0.55);
+  --focus-ink: #f8fafc;
+  --focus-glow: rgba(103, 232, 249, 0.35);
+  --focus-accent: #67e8f9;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 45%, transparent 0%, var(--focus-tint) 100%),
+    linear-gradient(var(--focus-tint), var(--focus-tint));
+  backdrop-filter: blur(3px);
+  transition: --focus-tint 1.2s ease, --focus-ink 1.2s ease, --focus-glow 1.2s ease, --focus-accent 1.2s ease;
+}
+.sf-focus[data-phase="paused"] {
+  --focus-tint: rgba(4, 8, 20, 0.72);
+  --focus-ink: rgba(226, 232, 240, 0.55);
+  --focus-glow: rgba(148, 163, 184, 0.15);
+  --focus-accent: #94a3b8;
+}
+.sf-focus[data-phase="break"] {
+  --focus-tint: rgba(40, 14, 24, 0.5);
+  --focus-ink: #fde3c8;
+  --focus-glow: rgba(251, 146, 120, 0.45);
+  --focus-accent: #fdba8c;
+}
+.sf-focus[data-phase="complete"] {
+  --focus-ink: #ecfeff;
+  --focus-glow: rgba(103, 232, 249, 0.6);
+}
+
+.sf-focus-time {
+  margin-top: 0.15em;
+  font-size: clamp(5.5rem, 25vw, 16rem);
+  letter-spacing: -0.02em;
+  color: var(--focus-ink);
+  text-shadow: 0 0 40px var(--focus-glow), 0 0 120px var(--focus-glow);
+  white-space: nowrap;
+}
+.sf-focus-time[data-phase="focus"] .sf-focus-colon { animation: sf-colon 2s ease-in-out infinite; }
+.sf-focus-time[data-phase="break"] { animation: sf-breathe 6s ease-in-out infinite; }
+.sf-focus-time[data-phase="complete"] { animation: sf-glow 2.4s ease-in-out infinite; }
+
+@keyframes sf-colon {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+@keyframes sf-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.035); }
+}
+@keyframes sf-glow {
+  0%, 100% { text-shadow: 0 0 40px var(--focus-glow), 0 0 120px var(--focus-glow); }
+  50% { text-shadow: 0 0 20px var(--focus-glow), 0 0 60px transparent; }
+}
+
+.sf-focus-label { color: var(--focus-accent); }
+.sf-focus-bar {
+  background: var(--focus-accent);
+  box-shadow: 0 0 10px var(--focus-glow);
+}
+.sf-focus-primary {
+  border-color: var(--focus-accent);
+  color: var(--focus-ink);
+}
+.sf-focus-primary:hover {
+  background: color-mix(in srgb, var(--focus-accent) 15%, transparent);
+}
+
+/* "Done": the ring draws, then the check, sparks burst outward and the words rise in. */
+.sf-check { stroke: var(--focus-accent); filter: drop-shadow(0 0 12px var(--focus-glow)); }
+.sf-check-ring {
+  stroke-dasharray: 327;
+  stroke-dashoffset: 327;
+  transform: rotate(-90deg);
+  transform-origin: center;
+  animation: sf-draw 0.6s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+.sf-check-mark {
+  stroke-dasharray: 70;
+  stroke-dashoffset: 70;
+  animation: sf-draw 0.35s 0.45s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+@keyframes sf-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+.sf-spark {
+  width: 6px;
+  height: 6px;
+  margin: -3px;
+  border-radius: 9999px;
+  background: var(--focus-accent);
+  box-shadow: 0 0 10px var(--focus-glow);
+  opacity: 0;
+  animation: sf-spark 0.9s ease-out both;
+}
+@keyframes sf-spark {
+  0% { opacity: 1; transform: rotate(var(--angle)) translateY(0) scale(1); }
+  100% { opacity: 0; transform: rotate(var(--angle)) translateY(-130%) translateY(-80px) scale(0.4); }
+}
+
+.sf-rise { animation: sf-rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+@keyframes sf-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Today, arriving from a finished session: the bar glows while it fills, and the gain floats up. */
+.sf-bar-boost { animation: sf-bar-boost 1.6s ease-in-out 2; }
+@keyframes sf-bar-boost {
+  0%, 100% { box-shadow: 0 0 14px rgba(103, 232, 249, 0.7); }
+  50% { box-shadow: 0 0 28px rgba(103, 232, 249, 1), 0 0 60px rgba(103, 232, 249, 0.5); }
+}
+.sf-gain { animation: sf-gain 2.8s ease-out forwards; }
+@keyframes sf-gain {
+  0% { opacity: 0; transform: translate(-50%, 6px); }
+  15%, 70% { opacity: 1; transform: translate(-50%, -4px); }
+  100% { opacity: 0; transform: translate(-50%, -18px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sf-focus-time,
+  .sf-focus-time .sf-focus-colon,
+  .sf-spark,
+  .sf-bar-boost {
+    animation: none !important;
+  }
+  .sf-spark { display: none; }
+  .sf-check-ring,
+  .sf-check-mark {
+    animation-duration: 0.01s !important;
+    animation-delay: 0s !important;
+  }
 }
 
 .sf-sheet {

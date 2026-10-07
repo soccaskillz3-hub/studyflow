@@ -1,6 +1,6 @@
-import SectionLabel from "../../components/SectionLabel";
-import SessionForm from "../../components/SessionForm";
-import SessionList from "../../components/SessionList";
+import SectionLabel from "../../../components/SectionLabel";
+import SessionForm from "../../../components/SessionForm";
+import SessionList from "../../../components/SessionList";
 
 export default function SchedulePage() {
   return (
