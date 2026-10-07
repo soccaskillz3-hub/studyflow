@@ -35,3 +35,14 @@ export function toParts(time: string) {
 export function fromParts(hour12: number, minute: number, pm: boolean) {
   return `${pad((hour12 % 12) + (pm ? 12 : 0))}:${pad(minute)}`;
 }
+
+// Minutes since midnight, local time.
+export function nowMinutes(date = new Date()) {
+  return date.getHours() * 60 + date.getMinutes();
+}
+
+// Hour of the day (0–24) as a short label, e.g. 13 -> "1 PM".
+export function formatHour(hour: number) {
+  const h = hour % 24;
+  return `${h % 12 === 0 ? 12 : h % 12} ${h >= 12 ? "PM" : "AM"}`;
+}

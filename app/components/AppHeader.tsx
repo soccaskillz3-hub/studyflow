@@ -1,0 +1,112 @@
+"use client";
+
+import Link from "next/link";
+import {usePathname} from "next/navigation";
+import {useCallback, useRef, useState} from "react";
+import SettingsMenu from "./SettingsMenu";
+import {useDismiss} from "../lib/useDismiss";
+
+const CALENDAR_PAGES = [
+  {href: "/calendar", label: "Day view", hint: "Your day hour by hour"},
+  {href: "/calendar/schedule", label: "Schedule", hint: "List and add sessions"},
+];
+
+const tabClass = (active: boolean) =>
+  `-mb-px flex items-center gap-2 border-b-2 pb-3 text-xs uppercase tracking-[0.3em] transition ${
+    active ? "border-cyan-300 text-cyan-100" : "border-transparent text-white/60 hover:text-white"
+  }`;
+
+// "Calendar" opens a menu of the calendar pages instead of navigating straight away.
+function CalendarMenu({pathname}: {pathname: string}) {
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+  const active = pathname.startsWith("/calendar");
+  const close = useCallback(() => setOpen(false), []);
+  useDismiss(root, open, close);
+
+  return (
+    <div ref={root} className="relative">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-haspopup="true"
+        onClick={() => setOpen((o) => !o)}
+        className={tabClass(active)}
+      >
+        Calendar
+        <svg
+          viewBox="0 0 12 12"
+          className={`h-2.5 w-2.5 transition-transform ${open ? "rotate-180" : ""}`}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+        >
+          <path d="M2.5 4.5L6 8l3.5-3.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="sf-panel sf-pop absolute left-0 top-full z-40 mt-2 w-60 rounded-xl border p-1.5 [text-shadow:none]">
+          {CALENDAR_PAGES.map((page) => {
+            const current = pathname === page.href;
+            return (
+              <Link
+                key={page.href}
+                href={page.href}
+                onClick={() => setOpen(false)}
+                aria-current={current ? "page" : undefined}
+                className={`block rounded-lg px-3 py-2.5 transition ${
+                  current ? "sf-panel-active" : "hover:bg-white/[0.08]"
+                }`}
+              >
+                <span className="block text-xs uppercase tracking-[0.25em] text-white">
+                  {page.label}
+                </span>
+                <span className="mt-1 block text-xs text-white/60">{page.hint}</span>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function AppHeader() {
+  const pathname = usePathname();
+  const today = new Date().toLocaleDateString(undefined, {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+  });
+  // Phones don't have room for the full weekday next to the settings button.
+  const todayShort = new Date().toLocaleDateString(undefined, {weekday: "short", month: "short", day: "numeric"});
+
+  return (
+    <>
+      <header className="flex items-center justify-between gap-4">
+        <Link href="/" className="text-sm font-semibold tracking-[0.4em] text-white">
+          STUDYFLOW
+        </Link>
+        <div className="flex items-center gap-5">
+          <p className="whitespace-nowrap text-[11px] uppercase tracking-[0.3em] text-white/75">
+            <span className="hidden sm:inline" suppressHydrationWarning>
+              {today}
+            </span>
+            <span className="sm:hidden" suppressHydrationWarning>
+              {todayShort}
+            </span>
+          </p>
+          <SettingsMenu />
+        </div>
+      </header>
+
+      <nav aria-label="Sections" className="mt-8 flex gap-6 border-b border-white/15 sm:gap-8">
+        <Link href="/" aria-current={pathname === "/" ? "page" : undefined} className={tabClass(pathname === "/")}>
+          Today
+        </Link>
+        <CalendarMenu pathname={pathname} />
+      </nav>
+    </>
+  );
+}

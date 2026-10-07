@@ -34,6 +34,90 @@ body {
   display: none;
 }
 
+/* Calendar on phones: the day scrolls inside its own box, fading at the edges, so the page stays short. */
+@media (max-width: 639px) {
+  .sf-day-scroll {
+    max-height: 60svh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+    mask-image: linear-gradient(to bottom, transparent, #000 32px, #000 calc(100% - 32px), transparent);
+  }
+  .sf-day-scroll::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ---------- Themed panels ----------
+   Menus and popovers take their colors from the scene: SceneProvider sets data-time and
+   data-weather on <html>. Time of day sets the base tint; weather layers a wash on top. */
+
+@property --panel { syntax: "<color>"; inherits: true; initial-value: rgba(6, 11, 23, 0.84); }
+@property --panel-edge { syntax: "<color>"; inherits: true; initial-value: rgba(150, 170, 220, 0.2); }
+@property --panel-glow { syntax: "<color>"; inherits: true; initial-value: rgba(120, 150, 230, 0.12); }
+@property --panel-accent { syntax: "<color>"; inherits: true; initial-value: rgba(103, 232, 249, 0.16); }
+@property --panel-accent-edge { syntax: "<color>"; inherits: true; initial-value: rgba(103, 232, 249, 0.45); }
+@property --panel-wash { syntax: "<color>"; inherits: true; initial-value: transparent; }
+
+:root {
+  transition-property: --panel, --panel-edge, --panel-glow, --panel-accent, --panel-accent-edge, --panel-wash;
+  transition-duration: 1800ms;
+  transition-timing-function: ease-in-out;
+}
+
+/* Night is the default (also before the scene is known). */
+:root[data-time="sunrise"] {
+  --panel: rgba(40, 36, 72, 0.8);
+  --panel-edge: rgba(247, 190, 150, 0.3);
+  --panel-glow: rgba(240, 167, 127, 0.18);
+  --panel-accent: rgba(247, 180, 140, 0.2);
+  --panel-accent-edge: rgba(247, 200, 160, 0.55);
+}
+:root[data-time="day"] {
+  --panel: rgba(20, 56, 94, 0.76);
+  --panel-edge: rgba(180, 214, 236, 0.32);
+  --panel-glow: rgba(130, 171, 200, 0.18);
+  --panel-accent: rgba(180, 220, 245, 0.18);
+  --panel-accent-edge: rgba(200, 230, 250, 0.55);
+}
+:root[data-time="dusk"] {
+  --panel: rgba(24, 24, 42, 0.82);
+  --panel-edge: rgba(214, 160, 150, 0.26);
+  --panel-glow: rgba(160, 110, 130, 0.14);
+  --panel-accent: rgba(214, 170, 160, 0.16);
+  --panel-accent-edge: rgba(230, 180, 170, 0.45);
+}
+
+:root[data-weather="cloudy"] { --panel-wash: rgba(120, 130, 145, 0.12); }
+:root[data-weather="rain"]   { --panel-wash: rgba(70, 85, 105, 0.24); --panel-edge: rgba(160, 180, 200, 0.22); }
+:root[data-weather="storm"]  { --panel-wash: rgba(30, 36, 50, 0.4); --panel-edge: rgba(150, 160, 190, 0.22); }
+:root[data-weather="snow"]   { --panel-wash: rgba(200, 215, 235, 0.1); --panel-edge: rgba(225, 235, 250, 0.42); }
+:root[data-weather="fog"]    { --panel-wash: rgba(170, 178, 190, 0.16); --panel-edge: rgba(210, 215, 225, 0.3); }
+
+.sf-panel {
+  background-color: var(--panel);
+  background-image: linear-gradient(var(--panel-wash), var(--panel-wash)),
+    radial-gradient(120% 80% at 50% 0%, var(--panel-glow), transparent 70%);
+  border-color: var(--panel-edge);
+  box-shadow: 0 18px 50px -12px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(14px) saturate(140%);
+}
+
+/* The selected item inside a themed panel. */
+.sf-panel-active {
+  background-color: var(--panel-accent);
+  box-shadow: inset 0 0 0 1px var(--panel-accent-edge);
+}
+
+.sf-sheet {
+  animation: sf-sheet 180ms ease-out both;
+}
+
+@keyframes sf-sheet {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+
 .sf-pop {
   animation: sf-pop 140ms ease-out both;
 }

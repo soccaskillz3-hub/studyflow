@@ -31,7 +31,7 @@ function Column({label, options, className = ""}: {label: string; options: Optio
           onClick={o.pick}
           className={`block w-full rounded-md py-1.5 text-center text-sm tabular-nums outline-none transition focus-visible:ring-1 focus-visible:ring-white/60 ${
             o.selected
-              ? "bg-cyan-300/15 text-cyan-100 ring-1 ring-inset ring-cyan-300/50"
+              ? "sf-panel-active text-white"
               : "text-white/65 hover:bg-white/[0.06] hover:text-white"
           }`}
         >
@@ -125,7 +125,7 @@ export default function TimePicker({value, onChange, label, suggestion, align = 
               close();
             }
           }}
-          className={`sf-pop absolute z-30 w-56 ${openUp ? "bottom-full mb-2" : "top-full mt-2"} rounded-xl border border-white/15 bg-slate-950/85 p-2 shadow-[0_18px_50px_-12px_rgba(0,0,0,0.8)] backdrop-blur-md [text-shadow:none] ${
+          className={`sf-pop absolute z-30 w-56 ${openUp ? "bottom-full mb-2" : "top-full mt-2"} sf-panel rounded-xl border p-2 [text-shadow:none] ${
             align === "right" ? "right-0" : "left-0"
           }`}
         >

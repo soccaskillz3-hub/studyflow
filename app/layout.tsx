@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import SceneBackdrop from "./components/SceneBackdrop";
+import AppHeader from "./components/AppHeader";
+import { SceneProvider } from "./lib/scene";
+import { ScheduleProvider } from "./lib/schedule";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,8 +27,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <SceneBackdrop />
-        {children}
+        <SceneProvider>
+          <ScheduleProvider>
+            <main className="sf-lift flex-1 font-mono text-white">
+              <div className="mx-auto max-w-3xl px-5 pb-48 pt-10 sm:px-8 sm:pt-14">
+                <AppHeader />
+                {children}
+              </div>
+            </main>
+          </ScheduleProvider>
+        </SceneProvider>
       </body>
     </html>
   );

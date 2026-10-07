@@ -1,29 +1,10 @@
 "use client";
 
-import {useEffect, useState, type FormEvent, type ReactNode} from "react";
-import TimePicker from "./components/TimePicker";
-import {formatMinutes, formatTime, fromMinutes, toMinutes} from "./lib/time";
-
-type Session = {
-  id: string;
-  subject: string;
-  start: string; // "HH:MM", 24-hour
-  end: string;
-  isBreak: boolean;
-};
-
-const STORAGE_KEY = "studyflow:v1";
-
-const sessionMinutes = (s: Session) => toMinutes(s.end) - toMinutes(s.start);
-
-function SectionLabel({children}: {children: ReactNode}) {
-  return (
-    <div className="flex items-center gap-4">
-      <h2 className="shrink-0 text-[11px] uppercase tracking-[0.3em] text-white/80">{children}</h2>
-      <span className="flex-1 border-t border-dashed border-white/25" />
-    </div>
-  );
-}
+import Link from "next/link";
+import SectionLabel from "./components/SectionLabel";
+import SessionList from "./components/SessionList";
+import {sessionMinutes, useSchedule} from "./lib/schedule";
+import {formatMinutes, formatTime} from "./lib/time";
 
 // Hour ticks along the progress line: every hour, or every two for long days.
 function hourTicks(planned: number) {
@@ -68,70 +49,10 @@ function ProgressLine({done, planned}: {done: number; planned: number}) {
   );
 }
 
-export default function Home() {
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [completed, setCompleted] = useState<string[]>([]);
-  const [loaded, setLoaded] = useState(false);
+const linkClass = "text-cyan-200 underline decoration-cyan-300/40 underline-offset-4 transition hover:text-cyan-100";
 
-  const [subject, setSubject] = useState("");
-  const [start, setStart] = useState("");
-  const [end, setEnd] = useState("");
-  const [isBreak, setIsBreak] = useState(false);
-  const [error, setError] = useState("");
-
-  // Load the saved schedule once on the client (localStorage doesn't exist on the server).
-  useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
-      if (saved) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time hydration from localStorage
-        setSessions(saved.sessions ?? []);
-        setCompleted(saved.completed ?? []);
-      }
-    } catch {
-      // Ignore unreadable storage and start with an empty schedule.
-    }
-    setLoaded(true);
-  }, []);
-
-  useEffect(() => {
-    if (!loaded) return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({sessions, completed}));
-    } catch {
-      // Storage may be unavailable (e.g. private mode); the app still works in-memory.
-    }
-  }, [sessions, completed, loaded]);
-
-  const addSession = (e: FormEvent) => {
-    e.preventDefault();
-    const name = subject.trim() || (isBreak ? "Break" : "");
-    if (!name) return setError("Give the session a name.");
-    if (!start || !end) return setError("Pick a start and end time.");
-    if (toMinutes(end) <= toMinutes(start)) return setError("End time must be after start time.");
-
-    setSessions((prev) =>
-      [...prev, {id: crypto.randomUUID(), subject: name, start, end, isBreak}].sort(
-        (a, b) => toMinutes(a.start) - toMinutes(b.start),
-      ),
-    );
-    setSubject("");
-    setStart(end); // next session most likely starts where this one ended
-    setEnd("");
-    setIsBreak(false);
-    setError("");
-  };
-
-  const removeSession = (id: string) => {
-    setSessions((prev) => prev.filter((s) => s.id !== id));
-    setCompleted((prev) => prev.filter((x) => x !== id));
-  };
-
-  // Clicking a session toggles it: complete on first click, undo on second.
-  const toggle = (id: string) =>
-    setCompleted((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
+export default function Today() {
+  const {sessions, completed} = useSchedule();
 
   const studySessions = sessions.filter((s) => !s.isBreak);
   const plannedMinutes = studySessions.reduce((sum, s) => sum + sessionMinutes(s), 0);
@@ -140,185 +61,74 @@ export default function Home() {
     .reduce((sum, s) => sum + sessionMinutes(s), 0);
   const percent = plannedMinutes === 0 ? 0 : Math.round((doneMinutes / plannedMinutes) * 100);
   const nextSession = studySessions.find((s) => !completed.includes(s.id));
-
-
   const doneCount = studySessions.filter((s) => completed.includes(s.id)).length;
 
-  const today = new Date().toLocaleDateString(undefined, {
-    weekday: "long",
-    month: "short",
-    day: "numeric",
-  });
-
-  // Where the pickers start when empty: the next full hour, and an hour after the start.
-  const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
-  const startSuggestion = fromMinutes(Math.ceil((nowMinutes + 1) / 60) * 60);
-  const endSuggestion = fromMinutes(toMinutes(start || startSuggestion) + 60);
-
-  const inputClass =
-    "border-b border-white/30 bg-transparent px-1 py-2 text-white placeholder:text-white/45 outline-none transition focus:border-cyan-300 [color-scheme:dark]";
-
   return (
-    <main className="sf-lift flex-1 font-mono text-white">
-      <div className="mx-auto max-w-3xl px-5 pb-48 pt-10 sm:px-8 sm:pt-14">
-        <header className="flex items-baseline justify-between gap-4">
-          <p className="text-sm font-semibold tracking-[0.4em] text-white">STUDYFLOW</p>
-          <p className="text-[11px] uppercase tracking-[0.3em] text-white/75" suppressHydrationWarning>
-            {today}
+    <>
+      <section className="mt-12">
+        <SectionLabel>Today&apos;s progress</SectionLabel>
+        <div className="mt-6 flex flex-wrap items-end gap-x-5 gap-y-2">
+          <p className="text-6xl font-semibold leading-none tracking-tight tabular-nums sm:text-7xl">
+            {formatMinutes(doneMinutes)}
           </p>
-        </header>
+          <p className="pb-1.5 text-sm text-cyan-200 tabular-nums">of {formatMinutes(plannedMinutes)} planned</p>
+        </div>
+        <ProgressLine done={doneMinutes} planned={plannedMinutes} />
+        <p className="mt-2 text-[11px] uppercase tracking-[0.3em] text-cyan-200">
+          {studySessions.length === 0
+            ? "No study sessions yet"
+            : `${doneCount} of ${studySessions.length} sessions done · ${percent}%`}
+        </p>
+      </section>
 
-        <section className="mt-14">
-          <SectionLabel>Today&apos;s progress</SectionLabel>
-          <div className="mt-6 flex flex-wrap items-end gap-x-5 gap-y-2">
-            <p className="text-6xl font-semibold leading-none tracking-tight tabular-nums sm:text-7xl">
-              {formatMinutes(doneMinutes)}
-            </p>
-            <p className="pb-1.5 text-sm text-cyan-200 tabular-nums">of {formatMinutes(plannedMinutes)} planned</p>
-          </div>
-          <ProgressLine done={doneMinutes} planned={plannedMinutes} />
-          <p className="mt-2 text-[11px] uppercase tracking-[0.3em] text-cyan-200">
-            {studySessions.length === 0
-              ? "No study sessions yet"
-              : `${doneCount} of ${studySessions.length} sessions done · ${percent}%`}
+      <section className="mt-16">
+        <SectionLabel>Next up</SectionLabel>
+        <div className="mt-5 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+          {nextSession ? (
+            <>
+              <p className="text-3xl font-semibold tracking-tight">{nextSession.subject}</p>
+              <p className="text-sm text-cyan-200 tabular-nums">
+                {formatTime(nextSession.start)} – {formatTime(nextSession.end)}
+              </p>
+            </>
+          ) : studySessions.length > 0 ? (
+            <>
+              <p className="text-3xl font-semibold tracking-tight">All done</p>
+              <p className="text-sm text-white/70">Nothing left today. Rest well.</p>
+            </>
+          ) : (
+            <>
+              <p className="text-3xl font-semibold tracking-tight text-white/85">Nothing planned</p>
+              <Link href="/calendar/schedule" className={`text-sm ${linkClass}`}>
+                Plan your day
+              </Link>
+            </>
+          )}
+        </div>
+      </section>
+
+      <section className="mt-16">
+        <SectionLabel>Today&apos;s sessions</SectionLabel>
+        <div className="mt-6">
+          <SessionList
+            empty={
+              <>
+                Nothing scheduled yet.{" "}
+                <Link href="/calendar/schedule" className={linkClass}>
+                  Add sessions
+                </Link>
+              </>
+            }
+          />
+        </div>
+        {sessions.length > 0 && (
+          <p className="mt-4 text-right text-xs uppercase tracking-[0.2em]">
+            <Link href="/calendar/schedule" className={linkClass}>
+              Edit schedule
+            </Link>
           </p>
-        </section>
-
-        <section className="mt-16">
-          <SectionLabel>Next up</SectionLabel>
-          <div className="mt-5 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-            {nextSession ? (
-              <>
-                <p className="text-3xl font-semibold tracking-tight">{nextSession.subject}</p>
-                <p className="text-sm text-cyan-200 tabular-nums">
-                  {formatTime(nextSession.start)} – {formatTime(nextSession.end)}
-                </p>
-              </>
-            ) : studySessions.length > 0 ? (
-              <>
-                <p className="text-3xl font-semibold tracking-tight">All done</p>
-                <p className="text-sm text-white/70">Nothing left today. Rest well.</p>
-              </>
-            ) : (
-              <>
-                <p className="text-3xl font-semibold tracking-tight text-white/85">Nothing planned</p>
-                <p className="text-sm text-white/70">Add a session below.</p>
-              </>
-            )}
-          </div>
-        </section>
-
-        <section className="mt-16">
-          <SectionLabel>Today&apos;s schedule</SectionLabel>
-
-          <form onSubmit={addSession} className="mt-6">
-            <div className="flex flex-col gap-4 md:flex-row md:items-end">
-              <input
-                type="text"
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                placeholder={isBreak ? "Break" : "Subject, e.g. CS 135"}
-                aria-label="Subject"
-                className={`${inputClass} md:min-w-0 md:flex-1`}
-              />
-              <div className="flex items-end gap-3">
-                <TimePicker value={start} onChange={setStart} label="Start time" suggestion={startSuggestion} />
-                <span className="pb-2 text-xs text-white/50">to</span>
-                <TimePicker value={end} onChange={setEnd} label="End time" suggestion={endSuggestion} align="right" />
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <label className="flex cursor-pointer items-center gap-2 text-xs uppercase tracking-[0.2em] text-white/70">
-                  <input
-                    type="checkbox"
-                    checked={isBreak}
-                    onChange={(e) => setIsBreak(e.target.checked)}
-                    className="h-3.5 w-3.5 accent-cyan-300"
-                  />
-                  Break
-                </label>
-                <button
-                  type="submit"
-                  className="border border-cyan-300/70 px-5 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-cyan-100 transition hover:bg-cyan-300/15 active:scale-[0.98]"
-                >
-                  Add
-                </button>
-              </div>
-            </div>
-            {error && <p className="mt-3 text-sm text-rose-300">{error}</p>}
-          </form>
-
-          <ul className="mt-8">
-            {loaded && sessions.length === 0 && (
-              <li className="border-y border-white/15 py-8 text-center text-sm text-white/60">
-                Your schedule is empty. Add your first session above.
-              </li>
-            )}
-
-            {sessions.map((session) => {
-              const done = completed.includes(session.id);
-              return (
-                <li
-                  key={session.id}
-                  className="group flex items-stretch border-b border-white/15 transition-colors first:border-t hover:bg-white/[0.04]"
-                >
-                  <button
-                    type="button"
-                    onClick={() => toggle(session.id)}
-                    aria-pressed={done}
-                    className="flex flex-1 items-center gap-4 py-4 pl-2 text-left sm:gap-6"
-                  >
-                    <span
-                      className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition ${
-                        done
-                          ? "border-cyan-300 bg-cyan-300 text-slate-900"
-                          : session.isBreak
-                            ? "border-dashed border-white/50"
-                            : "border-white/60 group-hover:border-cyan-300"
-                      }`}
-                    >
-                      {done && (
-                        <svg viewBox="0 0 12 12" className="h-2.5 w-2.5" fill="none" stroke="currentColor" strokeWidth="2.2">
-                          <path d="M2.5 6.5l2.2 2.2 4.8-5" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      )}
-                    </span>
-                    <span
-                      className={`hidden w-44 shrink-0 text-sm tabular-nums sm:block ${
-                        done ? "text-white/40" : session.isBreak ? "text-white/60" : "text-cyan-200"
-                      }`}
-                    >
-                      {formatTime(session.start)} – {formatTime(session.end)}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span
-                        className={`block truncate ${
-                          done ? "text-white/45 line-through" : session.isBreak ? "text-white/70" : "text-white"
-                        }`}
-                      >
-                        {session.subject}
-                      </span>
-                      <span className="mt-0.5 block text-xs text-cyan-200/90 tabular-nums sm:hidden">
-                        {formatTime(session.start)} – {formatTime(session.end)}
-                      </span>
-                    </span>
-                    <span className={`text-sm tabular-nums ${done ? "text-white/40" : "text-white/70"}`}>
-                      {formatMinutes(sessionMinutes(session))}
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => removeSession(session.id)}
-                    aria-label={`Remove ${session.subject}`}
-                    className="px-4 text-lg text-white/40 transition hover:text-rose-300 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100"
-                  >
-                    ×
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      </div>
-    </main>
+        )}
+      </section>
+    </>
   );
 }
