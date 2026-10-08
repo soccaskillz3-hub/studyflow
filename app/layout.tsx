@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Fraunces, Geist, Geist_Mono, Jost } from "next/font/google";
 import "./globals.css";
 import { AccountProvider } from "./lib/account";
+import { ClassesProvider } from "./lib/classes";
 import { getUser } from "./lib/dal";
 import { SceneProvider } from "./lib/scene";
 import { ScheduleProvider } from "./lib/schedule";
@@ -54,7 +55,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
               {user && <SettingsSync key={user.id} userId={user.id} />}
               {/* Keyed by account, so nothing from one login carries over to the next. */}
               <ScheduleProvider key={user?.id ?? "guest"} userId={user?.id ?? null}>
-                {children}
+                <ClassesProvider key={user?.id ?? "guest"} userId={user?.id ?? null}>
+                  {children}
+                </ClassesProvider>
               </ScheduleProvider>
             </SoundProvider>
           </SceneProvider>

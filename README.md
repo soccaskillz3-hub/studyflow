@@ -19,6 +19,7 @@ StudyFlow is a calm daily study planner. Lay out today's sessions, run a full-sc
 
 - **Today** — your progress for the day (study time done out of time planned, breaks excluded), what's next, and today's sessions. Click a session to tick it off.
 - **Calendar** — an hour-by-hour **day view** with a live "now" line. Click any open time to add a session there; overlapping sessions sit side by side. **Schedule** lists every session with an add form.
+- **Classes** — paste your class schedule from your school's portal (Waterloo Quest's list view, other PeopleSoft systems, or plain lines like `CS 135 LEC MWF 10:30-11:20 MC 2065`). StudyFlow finds each course's lectures, tutorials and labs with their days, times, rooms and term dates, lets you untick anything it got wrong, and shows them on the day view on the days they meet.
 - **Focus timer** — press **Start?** on a session for a full-screen countdown of its length. Pause with the button or the space bar, take a break (10, 20, 30 minutes or your own length), add 10 more minutes when time's up, and press **Done** for a little celebration. The timer survives reloads and leaving the page, and the tab title shows the time left.
 - **Custom time picker** — hour, minute and AM/PM columns with keyboard support.
 - **Your own account** — sign up with an email and password. Each day's schedule, what you've finished, and your theme and sound settings are saved to your account, private to you, and follow you between devices. Visitors who aren't logged in see a welcome page.
@@ -77,7 +78,7 @@ StudyFlow stores accounts and schedules in [Supabase](https://supabase.com) (fre
    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
    ```
 
-2. In the **SQL Editor**, run [`supabase/migrations/20261008000000_accounts.sql`](supabase/migrations/20261008000000_accounts.sql). It creates the tables and the row level security rules that keep each account's data private.
+2. In the **SQL Editor**, run each file in [`supabase/migrations`](supabase/migrations) in order. They create the tables and the row level security rules that keep each account's data private.
 3. In **Authentication → URL Configuration**, set the Site URL to where the app runs (`http://localhost:3000` locally) and add `http://localhost:3000/**` to the Redirect URLs, plus your deployed address once you have one.
 4. So that email links work on any device, in **Authentication → Emails**, change the links in the **Confirm signup** and **Reset password** templates to:
 
@@ -135,7 +136,8 @@ app/
 │   ├── page.tsx                # Today: progress, next up, today's sessions
 │   └── calendar/
 │       ├── page.tsx            # Day view
-│       └── schedule/page.tsx   # Schedule: add form and full list
+│       ├── schedule/page.tsx   # Schedule: add form and full list
+│       └── classes/page.tsx    # Paste a class schedule; your classes
 ├── (auth)/                     # Log in, sign up, forgot and reset password
 ├── auth/confirm/route.ts       # Where links in StudyFlow's emails land
 ├── welcome/page.tsx            # The front page for visitors who aren't logged in
@@ -163,6 +165,8 @@ app/
     │   └── sfx.ts              # One-off sounds: animals, thunder, chimes
     ├── schedule.tsx            # Today's sessions and what's done, saved to the account
     ├── settingsSync.tsx        # Saves theme, scene and sound settings to the account
+    ├── classSchedule.ts        # Reads pasted class schedules
+    ├── classes.tsx             # Imported classes and which days they meet
     ├── account.tsx             # The logged-in user, for client components
     ├── auth.ts                 # Server actions: sign up, log in, log out, passwords
     ├── dal.ts                  # Server-side login check for pages

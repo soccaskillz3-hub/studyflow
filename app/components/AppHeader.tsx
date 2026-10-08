@@ -10,6 +10,7 @@ import {useDismiss} from "../lib/useDismiss";
 const CALENDAR_PAGES = [
   {href: "/calendar", label: "Day view", hint: "Your day hour by hour"},
   {href: "/calendar/schedule", label: "Schedule", hint: "List and add sessions"},
+  {href: "/calendar/classes", label: "Classes", hint: "Paste your class schedule"},
 ];
 
 const tabClass = (active: boolean) =>
