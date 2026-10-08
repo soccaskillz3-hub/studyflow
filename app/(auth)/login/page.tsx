@@ -1,6 +1,7 @@
 import type {Metadata} from "next";
 import Link from "next/link";
 import {authLink} from "../../components/AuthForm";
+import DevLogin from "../../components/DevLogin";
 import {LoginForm} from "../forms";
 
 export const metadata: Metadata = {title: "Log in · StudyFlow"};
@@ -27,6 +28,7 @@ export default async function LoginPage({searchParams}: PageProps<"/login">) {
           Create an account
         </Link>
       </p>
+      <DevLogin />
     </>
   );
 }

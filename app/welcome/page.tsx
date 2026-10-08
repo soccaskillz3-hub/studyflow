@@ -1,4 +1,5 @@
 import Link from "next/link";
+import DevLogin from "../components/DevLogin";
 import SectionLabel from "../components/SectionLabel";
 
 // The front door for people who aren't logged in. The proxy shows it at "/" (and sends
@@ -42,6 +43,7 @@ export default function WelcomePage() {
               I already have one
             </Link>
           </div>
+          <DevLogin />
         </section>
 
         <section className="mt-24">
