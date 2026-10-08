@@ -21,7 +21,7 @@ StudyFlow is a calm daily study planner. Lay out today's sessions, run a full-sc
 - **Calendar** — an hour-by-hour **day view** with a live "now" line. Click any open time to add a session there; overlapping sessions sit side by side. **Schedule** lists every session with an add form.
 - **Focus timer** — press **Start?** on a session for a full-screen countdown of its length. Pause with the button or the space bar, take a break (10, 20, 30 minutes or your own length), add 10 more minutes when time's up, and press **Done** for a little celebration. The timer survives reloads and leaving the page, and the tab title shows the time left.
 - **Custom time picker** — hour, minute and AM/PM columns with keyboard support.
-- **Saved automatically** — everything is kept in your browser (`localStorage`).
+- **Your own account** — sign up with an email and password. Each day's schedule, what you've finished, and your theme and sound settings are saved to your account, private to you, and follow you between devices. Visitors who aren't logged in see a welcome page.
 
 <p>
   <img src="docs/screenshots/calendar.jpg" alt="The calendar's day view with the current session highlighted" width="49%">
@@ -66,6 +66,31 @@ Requires [Node.js](https://nodejs.org) 20.9 or newer.
 git clone https://github.com/soccaskillz3-hub/studyflow.git
 cd studyflow
 npm install
+```
+
+StudyFlow stores accounts and schedules in [Supabase](https://supabase.com) (free plan is fine). One-time setup:
+
+1. Create a Supabase project. In **Project Settings → API Keys**, copy the project URL and the **publishable** key into a `.env.local` file in the project folder (it's ignored by git):
+
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+   ```
+
+2. In the **SQL Editor**, run [`supabase/migrations/20261008000000_accounts.sql`](supabase/migrations/20261008000000_accounts.sql). It creates the tables and the row level security rules that keep each account's data private.
+3. In **Authentication → URL Configuration**, set the Site URL to where the app runs (`http://localhost:3000` locally) and add `http://localhost:3000/**` to the Redirect URLs, plus your deployed address once you have one.
+4. So that email links work on any device, in **Authentication → Emails**, change the links in the **Confirm signup** and **Reset password** templates to:
+
+   ```
+   {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=/
+   {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/reset-password
+   ```
+
+   (With Supabase's default templates, links only work in the browser that asked for them.)
+
+After at least two people have signed up, [`supabase/tests/privacy.sql`](supabase/tests/privacy.sql) checks in the SQL Editor that neither account can see or change the other's data.
+
+```bash
 npm run dev
 ```
 
@@ -82,7 +107,7 @@ In development, `window.__studyflowSound` in the browser console exposes the aud
 
 ## How weather and time work
 
-When you allow location access, StudyFlow asks [Open-Meteo](https://open-meteo.com) for the current weather code and today's sunrise and sunset, then refreshes every 30 minutes. Your coordinates are rounded to two decimal places (about 1 km) before being sent, and nothing else leaves your browser — there's no account, server or database.
+When you allow location access, StudyFlow asks [Open-Meteo](https://open-meteo.com) for the current weather code and today's sunrise and sunset, then refreshes every 30 minutes. Your coordinates are rounded to two decimal places (about 1 km) before being sent, and are never stored.
 
 - **Weather** comes from Open-Meteo's [WMO weather codes](https://open-meteo.com/en/docs#weather_variable_documentation), grouped into the six scenes.
 - **Time of day**: sunrise runs from 45 minutes before to 75 minutes after sunrise; dusk from an hour before to 45 minutes after sunset; day and night fill the rest. Without location, sunrise and sunset are assumed to be 6:30 AM and 7:00 PM.
@@ -95,17 +120,25 @@ Open-Meteo's free API is for non-commercial use, which suits a personal project 
 - [TypeScript](https://www.typescriptlang.org) and [Tailwind CSS 4](https://tailwindcss.com)
 - The Web Audio API for every sound
 - [Geist](https://vercel.com/font), [Jost](https://fonts.google.com/specimen/Jost) and [Fraunces](https://fonts.google.com/specimen/Fraunces)
+- [Supabase](https://supabase.com) for accounts and the Postgres database, with row level security
 - [Open-Meteo](https://open-meteo.com) for weather, sunrise and sunset
 
 ## Project structure
 
 ```
+proxy.ts                        # Keeps logins fresh; welcome page or login for visitors
+supabase/
+├── migrations/                 # Tables and privacy rules (run in the SQL Editor)
+└── tests/privacy.sql           # Checks accounts can't reach each other's data
 app/
-├── (main)/                     # Pages that share the header
+├── (main)/                     # Pages that share the header (login required)
 │   ├── page.tsx                # Today: progress, next up, today's sessions
 │   └── calendar/
 │       ├── page.tsx            # Day view
 │       └── schedule/page.tsx   # Schedule: add form and full list
+├── (auth)/                     # Log in, sign up, forgot and reset password
+├── auth/confirm/route.ts       # Where links in StudyFlow's emails land
+├── welcome/page.tsx            # The front page for visitors who aren't logged in
 ├── focus/[id]/page.tsx         # Full-screen focus timer
 ├── layout.tsx                  # Fonts, metadata and the app-wide providers
 ├── globals.css                 # Theme, scene palettes and animations
@@ -128,7 +161,12 @@ app/
     │   ├── engine.ts           # The Web Audio graph, volumes, noise
     │   ├── soundscape.ts       # Ambient beds and calls for each scene
     │   └── sfx.ts              # One-off sounds: animals, thunder, chimes
-    ├── schedule.tsx            # Sessions and what's done
+    ├── schedule.tsx            # Today's sessions and what's done, saved to the account
+    ├── settingsSync.tsx        # Saves theme, scene and sound settings to the account
+    ├── account.tsx             # The logged-in user, for client components
+    ├── auth.ts                 # Server actions: sign up, log in, log out, passwords
+    ├── dal.ts                  # Server-side login check for pages
+    ├── supabase/               # Supabase clients for the browser, server and proxy
     ├── timer.ts                # The focus timer
     ├── weather.ts              # Open-Meteo request, weather codes, time of day
     └── time.ts                 # "HH:MM" helpers

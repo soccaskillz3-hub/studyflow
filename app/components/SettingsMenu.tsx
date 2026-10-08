@@ -1,6 +1,9 @@
 "use client";
 
 import {useCallback, useRef, useState, type CSSProperties, type KeyboardEvent} from "react";
+import {useFormStatus} from "react-dom";
+import {forgetThisBrowser, useAccount} from "../lib/account";
+import {logOut} from "../lib/auth";
 import {useScene, type SceneStatus} from "../lib/scene";
 import {useSound} from "../lib/sound";
 import {THEMES, type Theme} from "../lib/themes";
@@ -236,6 +239,38 @@ function SoundTab() {
   );
 }
 
+function LogOutButton() {
+  const {pending} = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="shrink-0 rounded-md bg-white/[0.06] px-2.5 py-1.5 text-[11px] uppercase tracking-[0.15em] text-white/80 transition hover:bg-white/[0.12] hover:text-white disabled:opacity-60"
+    >
+      {pending ? "Logging out…" : "Log out"}
+    </button>
+  );
+}
+
+// Who's logged in, and the way out. Logging out also clears what StudyFlow kept in this browser.
+function AccountFooter() {
+  const account = useAccount();
+  if (!account) return null;
+  return (
+    <form
+      action={logOut}
+      onSubmit={forgetThisBrowser}
+      className="mt-4 flex items-center justify-between gap-3 border-t border-dashed border-white/15 pt-3"
+    >
+      <p className="min-w-0">
+        <span className="block text-[11px] uppercase tracking-[0.25em] text-white/60">Logged in as</span>
+        <span className="mt-0.5 block truncate text-xs text-white/85">{account.email}</span>
+      </p>
+      <LogOutButton />
+    </form>
+  );
+}
+
 export default function SettingsMenu() {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<Tab>("theme");
@@ -300,6 +335,8 @@ export default function SettingsMenu() {
             {tab === "theme" && <ThemeTab />}
             {tab === "sound" && <SoundTab />}
           </div>
+
+          <AccountFooter />
         </div>
       )}
     </div>

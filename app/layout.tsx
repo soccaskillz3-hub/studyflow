@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { Fraunces, Geist, Geist_Mono, Jost } from "next/font/google";
 import "./globals.css";
+import { AccountProvider } from "./lib/account";
+import { getUser } from "./lib/dal";
 import { SceneProvider } from "./lib/scene";
 import { ScheduleProvider } from "./lib/schedule";
+import { SettingsSync } from "./lib/settingsSync";
 import { SoundProvider } from "./lib/sound";
 
 const geistSans = Geist({
@@ -36,18 +39,26 @@ export const metadata: Metadata = {
   description: "Plan your study day and track your progress.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const user = await getUser();
+
   return (
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${jost.variable} ${fraunces.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <SceneProvider>
-          <SoundProvider>
-            <ScheduleProvider>{children}</ScheduleProvider>
-          </SoundProvider>
-        </SceneProvider>
+        <AccountProvider account={user}>
+          <SceneProvider>
+            <SoundProvider>
+              {user && <SettingsSync key={user.id} userId={user.id} />}
+              {/* Keyed by account, so nothing from one login carries over to the next. */}
+              <ScheduleProvider key={user?.id ?? "guest"} userId={user?.id ?? null}>
+                {children}
+              </ScheduleProvider>
+            </SoundProvider>
+          </SceneProvider>
+        </AccountProvider>
       </body>
     </html>
   );
