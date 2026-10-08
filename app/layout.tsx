@@ -52,7 +52,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <AccountProvider account={user}>
           <SceneProvider>
             <SoundProvider>
-              {user && <SettingsSync key={user.id} userId={user.id} />}
+              {user && <SettingsSync key={`settings-${user.id}`} userId={user.id} />}
               {/* Keyed by account, so nothing from one login carries over to the next. */}
               <ScheduleProvider key={user?.id ?? "guest"} userId={user?.id ?? null}>
                 <ClassesProvider key={user?.id ?? "guest"} userId={user?.id ?? null}>

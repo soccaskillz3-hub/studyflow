@@ -1,8 +1,9 @@
 "use server";
 
 import type {AuthError} from "@supabase/supabase-js";
-import {headers} from "next/headers";
+import {cookies, headers} from "next/headers";
 import {redirect} from "next/navigation";
+import {RESET_PENDING_COOKIE} from "./resetPending";
 import {createClient} from "./supabase/server";
 
 export type AuthState = {error?: string; sent?: string} | null;
@@ -74,13 +75,23 @@ export async function logIn(_: AuthState, form: FormData): Promise<AuthState> {
   const supabase = await createClient();
   const {error} = await supabase.auth.signInWithPassword({email, password});
   if (error) return {error: describe(error)};
+  (await cookies()).delete(RESET_PENDING_COOKIE); // a normal login ends any unfinished reset
   redirect(safeNext(text(form, "next")));
 }
 
 export async function logOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
+  (await cookies()).delete(RESET_PENDING_COOKIE);
   redirect("/");
+}
+
+// "I remembered it" on the reset page: undo the login the reset link did, and go log in properly.
+export async function cancelPasswordReset() {
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  (await cookies()).delete(RESET_PENDING_COOKIE);
+  redirect("/login");
 }
 
 export async function requestPasswordReset(_: AuthState, form: FormData): Promise<AuthState> {
@@ -105,5 +116,6 @@ export async function updatePassword(_: AuthState, form: FormData): Promise<Auth
   const supabase = await createClient();
   const {error} = await supabase.auth.updateUser({password});
   if (error) return {error: describe(error)};
+  (await cookies()).delete(RESET_PENDING_COOKIE);
   redirect("/");
 }

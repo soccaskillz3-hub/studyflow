@@ -1,4 +1,5 @@
 import {NextResponse, type NextRequest} from "next/server";
+import {RESET_PENDING_COOKIE} from "./app/lib/resetPending";
 import {updateSession} from "./app/lib/supabase/proxy";
 
 // Pages for people who aren't logged in. Logged-in visitors are sent on to the app instead.
@@ -19,6 +20,10 @@ export async function proxy(request: NextRequest) {
   if (matches(pathname, OPEN_PAGES)) return response;
 
   if (signedIn) {
+    // Logged in by a password reset link: finish the reset (or cancel it) first.
+    if (request.cookies.has(RESET_PENDING_COOKIE) && pathname !== "/reset-password") {
+      return carry(NextResponse.redirect(new URL("/reset-password", request.url)));
+    }
     return matches(pathname, GUEST_PAGES) ? carry(NextResponse.redirect(new URL("/", request.url))) : response;
   }
 
