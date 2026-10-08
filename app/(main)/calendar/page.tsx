@@ -1,11 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import {useCallback, useEffect, useRef, useState} from "react";
+import {use, useCallback, useEffect, useRef, useState} from "react";
+import CalendarNav from "../../components/CalendarNav";
 import SectionLabel from "../../components/SectionLabel";
 import SessionForm from "../../components/SessionForm";
-import {classesOn, useClasses, type ClassMeeting} from "../../lib/classes";
-import {dayKey, useSchedule, type Session} from "../../lib/schedule";
+import {classesOn, useClasses} from "../../lib/classes";
+import {dayEntries, hourRange, layoutBlocks} from "../../lib/dayLayout";
+import {addDays, formatDay, isDayKey} from "../../lib/days";
+import {useSchedule} from "../../lib/schedule";
 import {formatHour, formatMinutes, formatTime, fromMinutes, nowMinutes, toMinutes} from "../../lib/time";
 
 const HOUR_PX = 72;
@@ -13,53 +16,21 @@ const PX_PER_MIN = HOUR_PX / 60;
 const SNAP = 15; // minutes; clicked times round down to this
 const LATEST_START = 24 * 60 - 5 - SNAP; // 11:40 PM, so a new session still fits before 11:55 PM
 
-// Something on the day: a study session (or break), or a class imported from the user's schedule.
-type Entry =
-  | {kind: "session"; id: string; label: string; start: string; end: string; session: Session}
-  | {kind: "class"; id: string; label: string; start: string; end: string; meeting: ClassMeeting};
-
-type Block = {entry: Entry; start: number; end: number; lane: number; lanes: number};
-
-// Place entries in side-by-side lanes so overlapping ones don't cover each other.
-// Entries that overlap (directly or through a chain) form a cluster and share its lane count.
-function layoutBlocks(entries: Entry[]): Block[] {
-  const blocks: Block[] = [];
-  let cluster: Block[] = [];
-  let clusterEnd = -1;
-  let laneEnds: number[] = [];
-
-  const closeCluster = () => {
-    const lanes = Math.max(...cluster.map((b) => b.lane)) + 1;
-    cluster.forEach((b) => (b.lanes = lanes));
-  };
-
-  for (const entry of entries) {
-    const start = toMinutes(entry.start);
-    const end = toMinutes(entry.end);
-    if (cluster.length && start >= clusterEnd) {
-      closeCluster();
-      cluster = [];
-      laneEnds = [];
-    }
-    let lane = laneEnds.findIndex((laneEnd) => laneEnd <= start);
-    if (lane === -1) lane = laneEnds.length;
-    laneEnds[lane] = end;
-
-    const block = {entry, start, end, lane, lanes: 1};
-    cluster.push(block);
-    blocks.push(block);
-    clusterEnd = Math.max(clusterEnd, end);
-  }
-  if (cluster.length) closeCluster();
-  return blocks;
+// One day, hour by hour: today by default, or any day as /calendar?day=2026-10-14.
+export default function CalendarPage({searchParams}: PageProps<"/calendar">) {
+  const {day: requested} = use(searchParams);
+  const {today} = useSchedule();
+  const day = isDayKey(requested) ? requested : today;
+  // Keyed by day, so moving to another day starts fresh (no half-added session carried over).
+  return day && today ? <DayView key={day} day={day} isToday={day === today} /> : null;
 }
 
-export default function CalendarPage() {
-  const {sessions, completed, loaded, toggle} = useSchedule();
+function DayView({day, isToday}: {day: string; isToday: boolean}) {
+  const {sessionsOn, isLoaded, loadDays, completed, toggle} = useSchedule();
   const {classes} = useClasses();
-  // Null until mounted: the server doesn't know the visitor's local time.
-  const [now, setNow] = useState<number | null>(null);
-  const [day, setDay] = useState<string | null>(null);
+  // The current time, for today only. Null until mounted: the server doesn't know the visitor's local time.
+  const [clock, setClock] = useState<number | null>(null);
+  const now = isToday ? clock : null;
   const nowLine = useRef<HTMLDivElement>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const scrolled = useRef(false);
@@ -70,11 +41,15 @@ export default function CalendarPage() {
   const [composerKey, setComposerKey] = useState(0); // bumped to reset the form for each new slot
   const [hover, setHover] = useState<number | null>(null); // minutes under the mouse, on open space
 
+  const sessions = sessionsOn(day);
+  const loaded = isLoaded(day);
+
   useEffect(() => {
-    const tick = () => {
-      setNow(nowMinutes());
-      setDay(dayKey());
-    };
+    loadDays(day, day);
+  }, [day, loadDays]);
+
+  useEffect(() => {
+    const tick = () => setClock(nowMinutes());
     tick();
     const id = setInterval(tick, 30 * 1000);
     return () => clearInterval(id);
@@ -102,32 +77,11 @@ export default function CalendarPage() {
   const updateDraft = useCallback((start: string, end: string) => setDraft({start, end}), []);
   const closeComposer = () => setDraft(null);
 
-  const todaysClasses = day ? classesOn(classes, day) : [];
-  const entries: Entry[] = [
-    ...sessions.map((session) => ({
-      kind: "session" as const,
-      id: session.id,
-      label: session.subject,
-      start: session.start,
-      end: session.end,
-      session,
-    })),
-    ...todaysClasses.map((meeting) => ({
-      kind: "class" as const,
-      id: `class-${meeting.id}`,
-      label: [meeting.code, meeting.component].filter(Boolean).join(" "),
-      start: meeting.start,
-      end: meeting.end,
-      meeting,
-    })),
-  ].sort((a, b) => toMinutes(a.start) - toMinutes(b.start));
+  const dayClasses = classesOn(classes, day);
+  const entries = dayEntries(sessions, dayClasses);
 
   // Show a normal waking day, stretched to fit every session and class, the draft and the current time.
-  const spans = draft ? [...entries, draft] : entries;
-  const starts = spans.filter((s) => s.start).map((s) => toMinutes(s.start));
-  const ends = spans.filter((s) => s.end).map((s) => toMinutes(s.end));
-  const firstHour = Math.min(8, ...starts.map((m) => Math.floor(m / 60)), ...(now === null ? [] : [Math.floor(now / 60)]));
-  const lastHour = Math.max(22, ...ends.map((m) => Math.ceil(m / 60)), ...(now === null ? [] : [Math.floor(now / 60) + 1]));
+  const {first: firstHour, last: lastHour} = hourRange(draft ? [...entries, draft] : entries, now);
   const hours = Array.from({length: lastHour - firstHour}, (_, i) => firstHour + i);
   const top = (minutes: number) => (minutes - firstHour * 60) * PX_PER_MIN;
 
@@ -164,14 +118,40 @@ export default function CalendarPage() {
     if (current) status = `${current.entry.label} · ${formatMinutes(current.end - now)} left`;
     else if (upcoming) status = `Free · ${upcoming.entry.label} in ${formatMinutes(upcoming.start - now)}`;
     else status = entries.length ? "Nothing else scheduled today" : "Nothing scheduled today";
+  } else if (loaded) {
+    const studyMinutes = sessions
+      .filter((s) => !s.isBreak)
+      .reduce((sum, s) => sum + toMinutes(s.end) - toMinutes(s.start), 0);
+    const parts = [
+      studyMinutes ? `${formatMinutes(studyMinutes)} of study` : "",
+      dayClasses.length ? `${dayClasses.length} ${dayClasses.length === 1 ? "class" : "classes"}` : "",
+    ].filter(Boolean);
+    status = parts.length ? parts.join(" · ") : "Nothing planned";
   }
 
   return (
     <section className="mt-12">
-      <SectionLabel>Your day</SectionLabel>
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <SectionLabel>{isToday ? "Today" : formatDay(day, {weekday: "long"})}</SectionLabel>
+        </div>
+        <CalendarNav
+          prev={`/calendar?day=${addDays(day, -1)}`}
+          next={`/calendar?day=${addDays(day, 1)}`}
+          home="/calendar"
+          homeLabel="Today"
+          atHome={isToday}
+          prevLabel="Previous day"
+          nextLabel="Next day"
+        />
+      </div>
       <div className="mt-5 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
         <p className="text-3xl font-semibold tracking-tight tabular-nums">
-          {now === null ? " " : formatTime(fromMinutes(now))}
+          {!isToday
+            ? formatDay(day, {month: "long", day: "numeric", year: "numeric"})
+            : now === null
+              ? " "
+              : formatTime(fromMinutes(now))}
         </p>
         <p className="text-sm text-scene-soft">{status}</p>
       </div>
@@ -207,7 +187,7 @@ export default function CalendarPage() {
               })}
             </div>
 
-            {/* Grid and sessions */}
+            {/* Grid, sessions and classes */}
             <div
               ref={grid}
               className="relative flex-1 cursor-pointer"
@@ -264,23 +244,18 @@ export default function CalendarPage() {
                     <div
                       key={entry.id}
                       data-block
+                      data-state={isCurrent ? "current" : isPast ? "past" : undefined}
                       title={meeting.title || undefined}
-                      className={`absolute z-[2] flex cursor-default overflow-hidden rounded-md border border-l-[3px] px-2.5 backdrop-blur-sm ${
+                      className={`sf-class-block absolute z-[2] flex cursor-default overflow-hidden rounded-md border border-l-4 px-2.5 backdrop-blur-sm ${
                         compact ? "items-center gap-2 py-0.5" : "flex-col py-1.5"
-                      } ${
-                        isCurrent
-                          ? "border-white/60 bg-white/[0.16]"
-                          : isPast
-                            ? "border-white/15 bg-white/[0.05]"
-                            : "border-white/30 bg-white/[0.10]"
                       }`}
                       style={place}
                     >
-                      <span className={`block truncate text-sm ${isPast ? "text-white/60" : "text-white"}`}>
+                      <span className="block truncate text-sm font-semibold">
                         {entry.label}
-                        <span className="ml-2 text-[10px] uppercase tracking-[0.2em] text-white/50">Class</span>
+                        <span className="ml-2 text-[10px] font-normal uppercase tracking-[0.2em] opacity-70">Class</span>
                       </span>
-                      <span className={`block truncate text-[11px] tabular-nums ${isPast ? "text-white/45" : "text-white/70"}`}>
+                      <span className="block truncate text-[11px] tabular-nums opacity-80">
                         {formatTime(meeting.start)} – {formatTime(meeting.end)}
                         {meeting.location && ` · ${meeting.location}`}
                       </span>
@@ -290,7 +265,8 @@ export default function CalendarPage() {
 
                 const {session} = entry;
                 const done = completed.includes(session.id);
-                const canStart = !done && !session.isBreak;
+                // The focus timer runs today's sessions.
+                const canStart = isToday && !done && !session.isBreak;
                 return (
                   <div
                     key={session.id}
@@ -369,8 +345,8 @@ export default function CalendarPage() {
                 </div>
               )}
 
-              {/* Current time. It runs behind the session blocks (they sit above it), so it
-                  never crosses a session's text or buttons. */}
+              {/* Current time. It runs behind the blocks (they sit above it), so it never
+                  crosses a session's text or buttons. */}
               {now !== null && (
                 <div
                   ref={nowLine}
@@ -398,13 +374,16 @@ export default function CalendarPage() {
         >
           <div className="sf-panel sf-sheet mx-auto max-w-3xl rounded-2xl border p-4 [text-shadow:none] sm:p-5">
             <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-              <p className="text-[11px] uppercase tracking-[0.3em] text-white/80">New session</p>
+              <p className="text-[11px] uppercase tracking-[0.3em] text-white/80">
+                New session{isToday ? "" : ` · ${formatDay(day, {weekday: "short", month: "short", day: "numeric"})}`}
+              </p>
               {overlaps.length > 0 && (
                 <p className="text-xs text-amber-200">Overlaps {overlaps.map((e) => e.label).join(", ")}</p>
               )}
             </div>
             <SessionForm
               key={composerKey}
+              day={day}
               initialStart={draft.start}
               initialEnd={draft.end}
               autoFocus

@@ -8,9 +8,9 @@ import SettingsMenu from "./SettingsMenu";
 import {useDismiss} from "../lib/useDismiss";
 
 const CALENDAR_PAGES = [
-  {href: "/calendar", label: "Day view", hint: "Your day hour by hour"},
-  {href: "/calendar/schedule", label: "Schedule", hint: "List and add sessions"},
-  {href: "/calendar/classes", label: "Classes", hint: "Paste your class schedule"},
+  {href: "/calendar/week", label: "Week view", hint: "The whole week at a glance"},
+  {href: "/calendar", label: "Day view", hint: "One day, hour by hour"},
+  {href: "/calendar/schedule", label: "Schedule", hint: "List and add today's sessions"},
 ];
 
 const tabClass = (active: boolean) =>

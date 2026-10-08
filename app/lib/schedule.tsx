@@ -1,6 +1,7 @@
 "use client";
 
-import {createContext, useContext, useEffect, useState, type ReactNode} from "react";
+import {createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode} from "react";
+import {daysBetween, dayKey} from "./days";
 import {createClient} from "./supabase/client";
 import {toMinutes} from "./time";
 
@@ -21,6 +22,7 @@ type Legacy = {sessions: Session[]; completed: string[]};
 
 type Row = {
   id: string;
+  day: string;
   subject: string;
   starts_at: string; // "HH:MM:SS"
   ends_at: string;
@@ -28,7 +30,7 @@ type Row = {
   completed_at: string | null;
 };
 
-const COLUMNS = "id, subject, starts_at, ends_at, is_break, completed_at";
+const COLUMNS = "id, day, subject, starts_at, ends_at, is_break, completed_at";
 
 const fromRow = (r: Row): Session => ({
   id: r.id,
@@ -40,70 +42,95 @@ const fromRow = (r: Row): Session => ({
 
 const byStart = (a: Session, b: Session) => toMinutes(a.start) - toMinutes(b.start);
 
-// A calendar day in the user's own time zone, e.g. "2026-10-08".
-export function dayKey(date = new Date()) {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-}
+const NONE: Session[] = [];
 
 type Schedule = {
+  today: string | null; // null until mounted (the server doesn't know the user's time zone)
   sessions: Session[]; // today's, always sorted by start time
-  completed: string[]; // ids of finished sessions
   loaded: boolean; // false until today's schedule has been read
+  completed: string[]; // ids of finished sessions, on any loaded day
+  sessionsOn: (day: string) => Session[]; // sorted by start time; empty until that day loads
+  isLoaded: (day: string) => boolean;
+  loadDays: (from: string, to: string) => void; // fetch any of these days not already loaded
   error: string | null; // a load or save that failed
   dismissError: () => void;
   legacy: Legacy | null; // a schedule saved in this browser before accounts, waiting to be imported
   importLegacy: () => Promise<void>;
   dismissLegacy: () => void;
-  addSession: (session: Omit<Session, "id">) => void;
+  addSession: (session: Omit<Session, "id">, day?: string) => void; // today unless a day is given
   removeSession: (id: string) => void;
   toggle: (id: string) => void;
 };
 
 const ScheduleContext = createContext<Schedule | null>(null);
 
-// Holds today's schedule for every page, saved to the logged-in user's account. Changes show
-// straight away and save in the background; if a save fails, the schedule is reloaded from the
-// account so the screen never shows something that wasn't saved.
+// Holds the logged-in user's sessions for every page, day by day: today's always, and any other
+// days a page asks for (the calendar's week and day views). Changes show straight away and save
+// in the background; if a save fails, the loaded days are read again from the account so the
+// screen never shows something that wasn't saved.
 export function ScheduleProvider({userId, children}: {userId: string | null; children: ReactNode}) {
-  // Null until mounted: the server doesn't know the user's time zone, so it can't tell which day it is.
-  const [day, setDay] = useState<string | null>(null);
-  const [sessions, setSessions] = useState<Session[]>([]);
+  const [today, setToday] = useState<string | null>(null);
+  const [byDay, setByDay] = useState<Record<string, Session[]>>({});
   const [completed, setCompleted] = useState<string[]>([]);
-  const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [legacy, setLegacy] = useState<Legacy | null>(null);
-  const [reloads, setReloads] = useState(0);
+  // Days already fetched or being fetched, so asking twice doesn't fetch twice.
+  const requested = useRef(new Set<string>());
 
-  // Track the date, so a new, empty day starts at midnight.
+  const loadDays = useCallback(
+    (from: string, to: string) => {
+      if (!userId) return;
+      const missing = daysBetween(from, to).filter((d) => !requested.current.has(d));
+      if (!missing.length) return;
+      missing.forEach((d) => requested.current.add(d));
+      const first = missing[0];
+      const last = missing[missing.length - 1];
+
+      createClient()
+        .from("study_sessions")
+        .select(COLUMNS)
+        .eq("user_id", userId)
+        .gte("day", first)
+        .lte("day", last)
+        .order("starts_at")
+        .then(({data, error}) => {
+          if (error) {
+            missing.forEach((d) => requested.current.delete(d));
+            setError("Couldn't load your schedule. Check your connection and reload the page.");
+            return;
+          }
+          const rows = data as Row[];
+          const fetched: Record<string, Session[]> = Object.fromEntries(missing.map((d) => [d, []]));
+          rows.forEach((r) => fetched[r.day]?.push(fromRow(r)));
+          const ids = new Set(rows.map((r) => r.id));
+          setByDay((prev) => ({...prev, ...fetched}));
+          setCompleted((prev) => [
+            ...prev.filter((id) => !ids.has(id)),
+            ...rows.filter((r) => r.completed_at).map((r) => r.id),
+          ]);
+        });
+    },
+    [userId],
+  );
+
+  // Throw away everything loaded and read it again, e.g. after a save failed.
+  const reload = () => {
+    const days = [...requested.current].sort();
+    requested.current.clear();
+    if (days.length) loadDays(days[0], days[days.length - 1]);
+  };
+
+  // Track the date, so a new day starts at midnight, and always have today loaded.
   useEffect(() => {
-    const check = () => setDay(dayKey());
+    const check = () => setToday(dayKey());
     check();
     const id = setInterval(check, 60 * 1000);
     return () => clearInterval(id);
   }, []);
 
   useEffect(() => {
-    if (!userId || !day) return;
-    let current = true;
-    createClient()
-      .from("study_sessions")
-      .select(COLUMNS)
-      .eq("user_id", userId)
-      .eq("day", day)
-      .order("starts_at")
-      .then(({data, error}) => {
-        if (!current) return;
-        if (error) return setError("Couldn't load your schedule. Check your connection and reload the page.");
-        const rows = data as Row[];
-        setSessions(rows.map(fromRow));
-        setCompleted(rows.filter((r) => r.completed_at).map((r) => r.id));
-        setLoaded(true);
-      });
-    return () => {
-      current = false;
-    };
-  }, [userId, day, reloads]);
+    if (today) loadDays(today, today);
+  }, [today, loadDays]);
 
   useEffect(() => {
     if (!userId) return;
@@ -118,13 +145,16 @@ export function ScheduleProvider({userId, children}: {userId: string | null; chi
 
   const failed = (message: string) => {
     setError(message);
-    setReloads((n) => n + 1);
+    reload();
   };
 
-  const addSession = (session: Omit<Session, "id">) => {
+  const sessionsOn = (day: string) => byDay[day] ?? NONE;
+  const dayOf = (id: string) => Object.keys(byDay).find((d) => byDay[d].some((s) => s.id === id));
+
+  const addSession = (session: Omit<Session, "id">, day = today) => {
     if (!userId || !day) return;
     const id = crypto.randomUUID();
-    setSessions((prev) => [...prev, {...session, id}].sort(byStart));
+    setByDay((prev) => ({...prev, [day]: [...(prev[day] ?? []), {...session, id}].sort(byStart)}));
     createClient()
       .from("study_sessions")
       .insert({
@@ -140,7 +170,8 @@ export function ScheduleProvider({userId, children}: {userId: string | null; chi
   };
 
   const removeSession = (id: string) => {
-    setSessions((prev) => prev.filter((s) => s.id !== id));
+    const day = dayOf(id);
+    if (day) setByDay((prev) => ({...prev, [day]: prev[day].filter((s) => s.id !== id)}));
     setCompleted((prev) => prev.filter((x) => x !== id));
     createClient()
       .from("study_sessions")
@@ -171,14 +202,14 @@ export function ScheduleProvider({userId, children}: {userId: string | null; chi
 
   // Adds the browser's old schedule to today, keeping which sessions were done.
   const importLegacy = async () => {
-    if (!userId || !day || !legacy) return;
+    if (!userId || !today || !legacy) return;
     const now = new Date().toISOString();
     const {error} = await createClient()
       .from("study_sessions")
       .insert(
         legacy.sessions.map((s) => ({
           user_id: userId,
-          day,
+          day: today,
           subject: s.subject,
           starts_at: s.start,
           ends_at: s.end,
@@ -188,15 +219,19 @@ export function ScheduleProvider({userId, children}: {userId: string | null; chi
       );
     if (error) return setError("Couldn't import your old schedule. Please try again.");
     forgetLegacy();
-    setReloads((n) => n + 1);
+    reload();
   };
 
   return (
     <ScheduleContext
       value={{
-        sessions,
+        today,
+        sessions: today ? sessionsOn(today) : NONE,
+        loaded: today !== null && today in byDay,
         completed,
-        loaded,
+        sessionsOn,
+        isLoaded: (day) => day in byDay,
+        loadDays,
         error,
         dismissError: () => setError(null),
         legacy,

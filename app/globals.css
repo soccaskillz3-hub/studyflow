@@ -14,6 +14,9 @@
   --color-scene: var(--accent);
   --color-scene-soft: var(--accent-soft);
   --color-scene-ink: var(--accent-ink);
+  --color-class: var(--class);
+  --color-class-soft: var(--class-soft);
+  --color-class-ink: var(--class-ink);
 }
 
 /* The timer's display face follows the theme, for a different feel in each: thin, airy and
@@ -56,6 +59,53 @@
 :root[data-theme="forest"][data-time="day"]     { --accent: #ffd27a; --accent-soft: #ffe3a8; --accent-ink: #fff5dd; --accent-glow: rgba(255, 210, 122, 0.55); }
 :root[data-theme="forest"][data-time="dusk"]    { --accent: #9fe1ff; --accent-soft: #c5edff; --accent-ink: #effaff; --accent-glow: rgba(159, 225, 255, 0.55); }
 :root[data-theme="forest"][data-time="night"]   { --accent: #d4f36b; --accent-soft: #e6f9a6; --accent-ink: #f8ffe0; --accent-glow: rgba(212, 243, 107, 0.6); }
+
+/* ---------- Class colour ----------
+   Classes imported from a schedule get a second colour so they never read as study sessions.
+   Like the accent it follows the scene, but from the other side of the wheel: violet against
+   cyan on the night sea, coral against a gold day, ember against a blue forest dusk. Weather
+   sets how strongly blocks are filled, so they hold up on pale fog and snow and dark storms. */
+
+@property --class { syntax: "<color>"; inherits: true; initial-value: #c4a8ff; }
+@property --class-soft { syntax: "<color>"; inherits: true; initial-value: #dccbff; }
+@property --class-ink { syntax: "<color>"; inherits: true; initial-value: #f5efff; }
+@property --class-fill { syntax: "<percentage>"; inherits: true; initial-value: 42%; }
+
+:root[data-time="sunrise"] { --class: #ff9eb5; --class-soft: #ffc4d2; --class-ink: #fff0f4; }
+:root[data-time="day"]     { --class: #ff8b7b; --class-soft: #ffb9ae; --class-ink: #fff1ee; }
+:root[data-time="dusk"]    { --class: #b9a6ff; --class-soft: #d6cbff; --class-ink: #f4f1ff; }
+:root[data-theme="forest"][data-time="sunrise"] { --class: #ffa3b8; --class-soft: #ffc8d5; --class-ink: #fff1f5; }
+:root[data-theme="forest"][data-time="day"]     { --class: #ff94b0; --class-soft: #ffbfd0; --class-ink: #fff0f5; }
+:root[data-theme="forest"][data-time="dusk"]    { --class: #ffb36b; --class-soft: #ffd2a6; --class-ink: #fff5ea; }
+:root[data-theme="forest"][data-time="night"]   { --class: #c9a7ff; --class-soft: #ddc9ff; --class-ink: #f7f1ff; }
+:root[data-weather="cloudy"] { --class-fill: 46%; }
+:root[data-weather="rain"],
+:root[data-weather="storm"]  { --class-fill: 50%; }
+:root[data-weather="snow"],
+:root[data-weather="fog"]    { --class-fill: 56%; }
+
+/* A class on the calendar: a solid tinted block with a bold bar down its left edge. */
+.sf-class-block {
+  background:
+    linear-gradient(to right, color-mix(in srgb, var(--class) calc(var(--class-fill) + 12%), transparent), color-mix(in srgb, var(--class) var(--class-fill), transparent)),
+    rgba(8, 12, 26, 0.55);
+  border-color: color-mix(in srgb, var(--class) 80%, transparent);
+  border-left-color: var(--class);
+  box-shadow: 0 4px 14px -6px color-mix(in srgb, var(--class) 50%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  color: var(--class-ink);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+}
+.sf-class-block[data-state="current"] {
+  border-color: var(--class);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--class) 55%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+.sf-class-block[data-state="past"] {
+  background:
+    linear-gradient(color-mix(in srgb, var(--class) 14%, transparent), color-mix(in srgb, var(--class) 14%, transparent)),
+    rgba(8, 12, 26, 0.45);
+  border-color: color-mix(in srgb, var(--class) 35%, transparent);
+  color: color-mix(in srgb, var(--class-ink) 70%, transparent);
+}
 
 body {
   background: var(--background);
@@ -118,7 +168,7 @@ body {
 
 :root {
   transition-property: --panel, --panel-edge, --panel-glow, --panel-accent, --panel-accent-edge, --panel-wash,
-    --accent, --accent-soft, --accent-ink, --accent-glow;
+    --accent, --accent-soft, --accent-ink, --accent-glow, --class, --class-soft, --class-ink, --class-fill;
   transition-duration: 1800ms;
   transition-timing-function: ease-in-out;
 }

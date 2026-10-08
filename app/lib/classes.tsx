@@ -2,6 +2,7 @@
 
 import {createContext, useContext, useEffect, useState, type ReactNode} from "react";
 import type {Meeting} from "./classSchedule";
+import {toDate} from "./days";
 import {createClient} from "./supabase/client";
 import {toMinutes} from "./time";
 
@@ -47,8 +48,7 @@ const sameMeeting = (a: Meeting, b: Meeting) =>
 
 // Classes that meet on a date ("YYYY-MM-DD", the user's local day), sorted by start time.
 export function classesOn(classes: ClassMeeting[], day: string) {
-  const [y, m, d] = day.split("-").map(Number);
-  const weekday = new Date(y, m - 1, d).getDay();
+  const weekday = toDate(day).getDay();
   return classes
     .filter(
       (c) => c.days.includes(weekday) && (!c.startsOn || c.startsOn <= day) && (!c.endsOn || day <= c.endsOn),
@@ -59,6 +59,9 @@ export function classesOn(classes: ClassMeeting[], day: string) {
 type Classes = {
   classes: ClassMeeting[];
   loaded: boolean;
+  // Whether the person said "Not now" to adding their class schedule. Null until known.
+  promptDismissed: boolean | null;
+  dismissPrompt: () => void;
   // Saves the meetings that aren't already there; resolves to how many were added, or throws.
   addMeetings: (meetings: Meeting[]) => Promise<number>;
   removeMeetings: (ids: string[]) => Promise<void>;
@@ -70,6 +73,7 @@ const ClassesContext = createContext<Classes | null>(null);
 export function ClassesProvider({userId, children}: {userId: string | null; children: ReactNode}) {
   const [classes, setClasses] = useState<ClassMeeting[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [prefs, setPrefs] = useState<Record<string, unknown> | null>(null);
 
   useEffect(() => {
     if (!userId) return;
@@ -83,10 +87,32 @@ export function ClassesProvider({userId, children}: {userId: string | null; chil
         setClasses((data as Row[]).map(fromRow));
         setLoaded(true);
       });
+    createClient()
+      .from("user_settings")
+      .select("prefs")
+      .eq("user_id", userId)
+      .maybeSingle()
+      .then(({data}) => {
+        // No settings yet (or the prefs column isn't set up): nothing has been dismissed.
+        if (current) setPrefs((data?.prefs as Record<string, unknown> | undefined) ?? {});
+      });
     return () => {
       current = false;
     };
   }, [userId]);
+
+  // Remembered on the account, so the question isn't asked again on another device.
+  const dismissPrompt = () => {
+    if (!userId) return;
+    const next = {...prefs, classPromptDismissed: true};
+    setPrefs(next);
+    createClient()
+      .from("user_settings")
+      .upsert({user_id: userId, prefs: next})
+      .then(() => {
+        // If this fails the question just comes back next visit; there's nothing to undo here.
+      });
+  };
 
   const addMeetings = async (meetings: Meeting[]) => {
     if (!userId) throw new Error("Not logged in");
@@ -120,7 +146,20 @@ export function ClassesProvider({userId, children}: {userId: string | null; chil
     setClasses((prev) => prev.filter((c) => !ids.includes(c.id)));
   };
 
-  return <ClassesContext value={{classes, loaded, addMeetings, removeMeetings}}>{children}</ClassesContext>;
+  return (
+    <ClassesContext
+      value={{
+        classes,
+        loaded,
+        promptDismissed: prefs === null ? null : prefs.classPromptDismissed === true,
+        dismissPrompt,
+        addMeetings,
+        removeMeetings,
+      }}
+    >
+      {children}
+    </ClassesContext>
+  );
 }
 
 export function useClasses() {

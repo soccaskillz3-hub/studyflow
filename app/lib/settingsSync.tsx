@@ -40,7 +40,9 @@ export function SettingsSync({userId}: {userId: string}) {
       .then(({data, error}) => {
         if (!current || error) return; // offline or failed: carry on with this browser's settings
         const row = data as Row | null;
-        if (row) {
+        // Sound is always saved alongside the rest, so a row without it (e.g. one created just
+        // to remember a dismissed prompt) has no settings in it yet.
+        if (row?.sound) {
           chooseTheme(oneOf<Theme>(row.theme, THEME_IDS) ?? "ocean");
           chooseWeather(oneOf<Weather>(row.weather_override, WEATHERS));
           chooseTime(oneOf<TimeOfDay>(row.time_override, TIMES));

@@ -1,9 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import {useCallback, useRef, useState, type CSSProperties, type KeyboardEvent} from "react";
 import {useFormStatus} from "react-dom";
 import {forgetThisBrowser, useAccount} from "../lib/account";
 import {logOut} from "../lib/auth";
+import {useClasses} from "../lib/classes";
+import {formatDay} from "../lib/days";
 import {useScene, type SceneStatus} from "../lib/scene";
 import {useSound} from "../lib/sound";
 import {THEMES, type Theme} from "../lib/themes";
@@ -31,8 +34,9 @@ const STATUS_TEXT: Record<Exclude<SceneStatus, "live">, string> = {
 };
 
 const TABS = [
-  {id: "theme", label: "Theme & scene"},
+  {id: "theme", label: "Theme"},
   {id: "sound", label: "Sound"},
+  {id: "classes", label: "Classes"},
 ] as const;
 type Tab = (typeof TABS)[number]["id"];
 
@@ -239,6 +243,50 @@ function SoundTab() {
   );
 }
 
+// What's been imported from the class schedule, and the way to add or change it.
+function ClassesTab({onNavigate}: {onNavigate: () => void}) {
+  const {classes, loaded} = useClasses();
+  const courses = new Set(classes.map((c) => c.code)).size;
+  const lastDay = classes.reduce<string | null>((latest, c) => (c.endsOn && (!latest || c.endsOn > latest) ? c.endsOn : latest), null);
+  const link =
+    "rounded-md px-3 py-2 text-center text-[11px] uppercase tracking-[0.15em] transition";
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <p className="text-xs uppercase tracking-[0.25em] text-white">Class schedule</p>
+        <p className="mt-1 text-xs leading-relaxed text-white/55">
+          Paste your schedule from your student portal and your classes show up on the calendar, in their own colour.
+        </p>
+      </div>
+      {loaded && classes.length > 0 ? (
+        <p className="flex items-center gap-2.5 text-xs text-white/85">
+          <span className="sf-class-block h-3 w-3 shrink-0 rounded-[3px] border border-l-[3px]" aria-hidden />
+          {courses} {courses === 1 ? "course" : "courses"} · {classes.length} weekly{" "}
+          {classes.length === 1 ? "class" : "classes"}
+          {lastDay && ` · until ${formatDay(lastDay, {month: "short", day: "numeric"})}`}
+        </p>
+      ) : (
+        <p className="text-xs text-white/70">{loaded ? "No classes added yet." : " "}</p>
+      )}
+      <div className="flex gap-2">
+        <Link href="/classes" onClick={onNavigate} className={`${link} flex-1 bg-class/20 text-class-ink hover:bg-class/30`}>
+          {classes.length ? "Paste a new schedule" : "Add your classes"}
+        </Link>
+        {classes.length > 0 && (
+          <Link
+            href="/classes#your-classes"
+            onClick={onNavigate}
+            className={`${link} bg-white/[0.06] text-white/80 hover:bg-white/[0.12] hover:text-white`}
+          >
+            Manage
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function LogOutButton() {
   const {pending} = useFormStatus();
   return (
@@ -334,6 +382,7 @@ export default function SettingsMenu() {
           <div id={`settings-panel-${tab}`} role="tabpanel" aria-labelledby={`settings-tab-${tab}`} className="mt-4">
             {tab === "theme" && <ThemeTab />}
             {tab === "sound" && <SoundTab />}
+            {tab === "classes" && <ClassesTab onNavigate={close} />}
           </div>
 
           <AccountFooter />

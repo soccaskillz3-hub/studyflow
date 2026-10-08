@@ -6,6 +6,7 @@ import {useSchedule} from "../lib/schedule";
 import {fromMinutes, nowMinutes, toMinutes} from "../lib/time";
 
 type Props = {
+  day?: string; // "YYYY-MM-DD" to add to; today if not given
   initialStart?: string;
   initialEnd?: string;
   autoFocus?: boolean;
@@ -17,6 +18,7 @@ type Props = {
 };
 
 export default function SessionForm({
+  day,
   initialStart = "",
   initialEnd = "",
   autoFocus = false,
@@ -48,7 +50,7 @@ export default function SessionForm({
     if (!start || !end) return setError("Pick a start and end time.");
     if (toMinutes(end) <= toMinutes(start)) return setError("End time must be after start time.");
 
-    addSession({subject: name, start, end, isBreak});
+    addSession({subject: name, start, end, isBreak}, day);
     if (onAdded) return onAdded();
     setSubject("");
     setStart(end); // next session most likely starts where this one ended

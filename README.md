@@ -18,8 +18,8 @@ StudyFlow is a calm daily study planner. Lay out today's sessions, run a full-sc
 ### Plan and focus
 
 - **Today** — your progress for the day (study time done out of time planned, breaks excluded), what's next, and today's sessions. Click a session to tick it off.
-- **Calendar** — an hour-by-hour **day view** with a live "now" line. Click any open time to add a session there; overlapping sessions sit side by side. **Schedule** lists every session with an add form.
-- **Classes** — paste your class schedule from your school's portal (Waterloo Quest's list view, other PeopleSoft systems, or plain lines like `CS 135 LEC MWF 10:30-11:20 MC 2065`). StudyFlow finds each course's lectures, tutorials and labs with their days, times, rooms and term dates, lets you untick anything it got wrong, and shows them on the day view on the days they meet.
+- **Calendar** — a **week view** of everything at a glance (classes and study sessions, Monday to Sunday), and an hour-by-hour **day view** with a live "now" line. Step back and forward through weeks and days to plan ahead; click any open time in the day view to add a session there, and overlapping sessions sit side by side. **Schedule** lists today's sessions with an add form.
+- **Classes** — paste your class schedule from your school's portal (Waterloo Quest's list view, other PeopleSoft systems, or plain lines like `CS 135 LEC MWF 10:30-11:20 MC 2065`). StudyFlow finds each course's lectures, tutorials and labs with their days, times, rooms and term dates, lets you untick anything it got wrong, and shows them on the calendar on the days they meet, in their own bold colour that changes with the scene. New accounts are asked whether they'd like to add their classes; it lives in **Settings → Classes** after that.
 - **Focus timer** — press **Start?** on a session for a full-screen countdown of its length. Pause with the button or the space bar, take a break (10, 20, 30 minutes or your own length), add 10 more minutes when time's up, and press **Done** for a little celebration. The timer survives reloads and leaving the page, and the tab title shows the time left.
 - **Custom time picker** — hour, minute and AM/PM columns with keyboard support.
 - **Your own account** — sign up with an email and password. Each day's schedule, what you've finished, and your theme and sound settings are saved to your account, private to you, and follow you between devices. Visitors who aren't logged in see a welcome page.
@@ -31,12 +31,12 @@ StudyFlow is a calm daily study planner. Lay out today's sessions, run a full-sc
 
 ### Themes
 
-Pick a theme in **Settings → Theme & scene**:
+Pick a theme in **Settings → Theme**:
 
 - **Ocean** — open sky over rolling, animated water.
 - **Forest** — layered trees under an overhanging canopy, with light shafts falling through the gaps, drifting dust, fireflies after dark, and **wildlife that comes and goes**: birds, butterflies and a rabbit by day, deer at dawn and dusk, bats at dusk, and an owl and a fox at night.
 
-Each theme has its own **timer font** for a completely different feel — a thin, airy sans by the ocean; a soft, chunky storybook serif in the forest — and the app's **accent colour** (progress bar, buttons, the timer) changes with the scene, picked to stand out against that sky.
+Each theme has its own **timer font** for a completely different feel — a thin, airy sans by the ocean; a soft, chunky storybook serif in the forest — and the app's **accent colour** (progress bar, buttons, the timer) changes with the scene, picked to stand out against that sky. Classes get a second colour from the other side of the colour wheel (violet against the cyan night sea, coral against a gold day, ember against a blue forest dusk), filled more strongly in fog and snow so they stay easy to read.
 
 <p>
   <img src="docs/screenshots/timer-ocean.jpg" alt="The focus timer in the ocean theme" width="49%">
@@ -134,10 +134,11 @@ supabase/
 app/
 ├── (main)/                     # Pages that share the header (login required)
 │   ├── page.tsx                # Today: progress, next up, today's sessions
-│   └── calendar/
-│       ├── page.tsx            # Day view
-│       ├── schedule/page.tsx   # Schedule: add form and full list
-│       └── classes/page.tsx    # Paste a class schedule; your classes
+│   ├── calendar/
+│   │   ├── page.tsx            # Day view (any day: ?day=2026-10-14)
+│   │   ├── week/page.tsx       # Week view
+│   │   └── schedule/page.tsx   # Schedule: add form and today's list
+│   └── classes/page.tsx        # Paste a class schedule; your classes
 ├── (auth)/                     # Log in, sign up, forgot and reset password
 ├── auth/confirm/route.ts       # Where links in StudyFlow's emails land
 ├── welcome/page.tsx            # The front page for visitors who aren't logged in
@@ -152,7 +153,7 @@ app/
 │   │   ├── ForestWildlife.tsx  # Animals and when they visit
 │   │   ├── WeatherLayers.tsx   # Rain, lightning, snow and fog (shared)
 │   │   └── forestShapes.ts     # Generated tree, canopy and fern shapes
-│   ├── SettingsMenu.tsx        # Theme & scene, Sound
+│   ├── SettingsMenu.tsx        # Theme, Sound, Classes, account
 │   ├── MuteButton.tsx
 │   ├── TimePicker.tsx
 │   └── …                       # Header, session form and list
@@ -167,6 +168,8 @@ app/
     ├── settingsSync.tsx        # Saves theme, scene and sound settings to the account
     ├── classSchedule.ts        # Reads pasted class schedules
     ├── classes.tsx             # Imported classes and which days they meet
+    ├── dayLayout.ts            # Sessions and classes laid out on a timeline
+    ├── days.ts                 # "YYYY-MM-DD" day helpers in local time
     ├── account.tsx             # The logged-in user, for client components
     ├── auth.ts                 # Server actions: sign up, log in, log out, passwords
     ├── dal.ts                  # Server-side login check for pages

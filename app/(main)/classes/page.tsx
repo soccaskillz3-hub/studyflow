@@ -1,10 +1,10 @@
 "use client";
 
 import {useState} from "react";
-import SectionLabel from "../../../components/SectionLabel";
-import {describeDays, parseSchedule, type Meeting, type ParseResult} from "../../../lib/classSchedule";
-import {useClasses, type ClassMeeting} from "../../../lib/classes";
-import {formatTime} from "../../../lib/time";
+import SectionLabel from "../../components/SectionLabel";
+import {describeDays, parseSchedule, type Meeting, type ParseResult} from "../../lib/classSchedule";
+import {useClasses, type ClassMeeting} from "../../lib/classes";
+import {formatTime} from "../../lib/time";
 
 const EXAMPLE = `CS 135 - Designing Functional Programs
 5873  001  LEC  MWF 10:30AM - 11:20AM  MC 2065  09/08/2025 - 12/02/2025
@@ -283,7 +283,7 @@ export default function ClassesPage() {
         </div>
       </section>
 
-      <section className="mt-16">
+      <section id="your-classes" className="mt-16 scroll-mt-8">
         <SectionLabel>Your classes</SectionLabel>
         <div className="mt-6">
           <YourClasses />

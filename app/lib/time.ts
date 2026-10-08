@@ -19,6 +19,13 @@ export function formatTime(time: string) {
   return `${hour12}:${pad(m)} ${suffix}`;
 }
 
+// "9:30", "12:05": the hour on a 12-hour clock without AM/PM, for tight spaces where the
+// position (e.g. on a timeline) already shows the time of day.
+export function formatShortTime(time: string) {
+  const [h, m] = time.split(":").map(Number);
+  return `${h % 12 === 0 ? 12 : h % 12}:${pad(m)}`;
+}
+
 export function formatMinutes(total: number) {
   const h = Math.floor(total / 60);
   const m = total % 60;
