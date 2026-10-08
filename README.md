@@ -80,7 +80,7 @@ StudyFlow stores accounts and schedules in [Supabase](https://supabase.com) (fre
 
 2. In the **SQL Editor**, run each file in [`supabase/migrations`](supabase/migrations) in order. They create the tables and the row level security rules that keep each account's data private.
 3. In **Authentication → URL Configuration**, set the Site URL to where the app runs (`http://localhost:3000` locally) and add `http://localhost:3000/**` to the Redirect URLs, plus your deployed address once you have one.
-4. So that email links work on any device, in **Authentication → Emails**, change the links in the **Confirm signup** and **Reset password** templates to:
+4. Optional, and only possible once you've set up custom SMTP in Supabase: so that email links work on any device, in **Authentication → Emails**, change the links in the **Confirm signup** and **Reset password** templates to:
 
    ```
    {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=/
