@@ -7,7 +7,9 @@ import {LoginForm} from "../forms";
 export const metadata: Metadata = {title: "Log in · StudyFlow"};
 
 const NOTICES: Record<string, string> = {
-  link: "That link has expired or was already used. Log in, or ask for a new one.",
+  // Also where Supabase's default confirmation link lands when it's opened in a different browser
+  // from the one used to sign up: the email is confirmed by then, so logging in works.
+  link: "If you just confirmed your email, you're all set: log in below. Otherwise that link has expired or was already used.",
 };
 
 export default async function LoginPage({searchParams}: PageProps<"/login">) {
