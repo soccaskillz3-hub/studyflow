@@ -18,10 +18,12 @@ StudyFlow is a calm daily study planner. Lay out today's sessions, run a full-sc
 ### Plan and focus
 
 - **Dashboard** — the first thing you see when you log in. **This week** up top: study time done out of planned, your streak, and a bar for each day. Then **today**: your progress (breaks excluded), what's next, and today's sessions. Click a session to tick it off.
-- **Calendar** — a **week view** of everything at a glance (classes and study sessions, Monday to Sunday), and an hour-by-hour **day view** with a live "now" line. Step back and forward through weeks and days to plan ahead; click any open time in the day view to add a session there, and overlapping sessions sit side by side. **Schedule** lists today's sessions with an add form.
+- **Calendar** — a **week view** of everything at a glance (classes and study sessions, Monday to Sunday), and an hour-by-hour **day view** with a live "now" line. Step back and forward through weeks and days to plan ahead, with the arrows or by **swiping** (a finger on a phone or iPad, or two fingers on a trackpad); click any open time in the day view to add a session there, and overlapping sessions sit side by side. **Schedule** lists today's sessions with an add form.
 - **Classes** — paste your class schedule from your school's portal (Waterloo Quest's list view, other PeopleSoft systems, or plain lines like `CS 135 LEC MWF 10:30-11:20 MC 2065`). StudyFlow finds each course's lectures, tutorials and labs with their days, times, rooms and term dates, lets you untick anything it got wrong, and shows them on the calendar on the days they meet, in their own bold colour that changes with the scene. New accounts are asked whether they'd like to add their classes; it lives in **Settings → Classes** after that.
-- **Progress** — your **streak** (days in a row with a study session done; the flame lights up once today counts), a GitHub-style grid of the **last six months** shaded by how much you got done, and a closer look at any **week**: done against planned for each day, and a breakdown **by subject**.
-- **Focus timer** — press **Start?** on a session for a full-screen countdown of its length. Pause with the button or the space bar, take a break (10, 20, 30 minutes or your own length), add 10 more minutes when time's up, and press **Done** for a little celebration. The timer survives reloads and leaving the page, and the tab title shows the time left.
+- **Progress** — your **streak** (days in a row with a study session done; the flame lights up once today counts), a GitHub-style grid of the **last six months** shaded by how much you got done, and a closer look at any **week** (swipe to move between weeks): done against planned for each day, and a breakdown **by subject**.
+- **Start? — timer or clock** — pressing **Start?** on a session asks whether you want the study timer or the clock. The first time you choose, it asks once whether to make that your default; either way it never asks again, and you can change it any time in **Settings → Focus**.
+- **Focus timer** — a full-screen countdown of the session's length. Pause with the button or the space bar, take a break (10, 20, 30 minutes or your own length), add 10 more minutes when time's up, and press **Done** for a little celebration. The timer survives reloads and leaving the page, and the tab title shows the time left.
+- **Clock** — a full-screen clock over the scene, for when you just want the time and the view (the clock button in the header, or from Start?). Swipe (a finger, or two fingers on a trackpad), drag, use the arrow keys or the dots to choose a style: **Classic** big numbers, an **Analog** dial with a sweeping second hand, the time in **Words** ("just after twenty-five past two"), **Orbit** rings for hours, minutes and seconds, or a **Sun path** showing where the sun or moon is in its arc. Your style is saved to your account. The controls fade away when you're not moving the mouse, it can go full screen, and it keeps the screen awake. Opened from a session, it shows that session with a **Done** button.
 - **Custom time picker** — hour, minute and AM/PM columns with keyboard support.
 - **Your own account** — sign up with an email and password. Each day's schedule, what you've finished, and your theme and sound settings are saved to your account, private to you, and follow you between devices. Visitors who aren't logged in see a welcome page.
 
@@ -145,6 +147,7 @@ app/
 ├── auth/confirm/route.ts       # Where links in StudyFlow's emails land
 ├── welcome/page.tsx            # The front page for visitors who aren't logged in
 ├── focus/[id]/page.tsx         # Full-screen focus timer
+├── clock/page.tsx              # Full-screen clock, five styles to swipe between
 ├── layout.tsx                  # Fonts, metadata and the app-wide providers
 ├── globals.css                 # Theme, scene palettes and animations
 ├── components/
@@ -157,7 +160,9 @@ app/
 │   │   └── forestShapes.ts     # Generated tree, canopy and fern shapes
 │   ├── StudyHeatmap.tsx        # The six-month grid on Progress
 │   ├── WeekBars.tsx            # A bar per day: done against planned
-│   ├── SettingsMenu.tsx        # Theme, Sound, Classes, account
+│   ├── clock/faces.tsx         # The clock styles
+│   ├── StartButton.tsx         # Start?: the timer-or-clock choice
+│   ├── SettingsMenu.tsx        # Theme, Sound, Focus, Classes, account
 │   ├── MuteButton.tsx
 │   ├── TimePicker.tsx
 │   └── …                       # Header, session form and list
@@ -170,6 +175,7 @@ app/
     │   └── sfx.ts              # One-off sounds: animals, thunder, chimes
     ├── schedule.tsx            # Today's sessions and what's done, saved to the account
     ├── settingsSync.tsx        # Saves theme, scene and sound settings to the account
+    ├── prefs.tsx               # Small account choices: Start? default, clock style
     ├── history.ts              # Study totals by day, and streaks
     ├── classSchedule.ts        # Reads pasted class schedules
     ├── classes.tsx             # Imported classes and which days they meet
@@ -179,6 +185,7 @@ app/
     ├── auth.ts                 # Server actions: sign up, log in, log out, passwords
     ├── dal.ts                  # Server-side login check for pages
     ├── supabase/               # Supabase clients for the browser, server and proxy
+    ├── useSwipe.ts             # Touch and trackpad swipes for next / previous
     ├── timer.ts                # The focus timer
     ├── weather.ts              # Open-Meteo request, weather codes, time of day
     └── time.ts                 # "HH:MM" helpers

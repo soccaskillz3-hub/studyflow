@@ -3,6 +3,7 @@
 import {createContext, useContext, useEffect, useState, type ReactNode} from "react";
 import type {Meeting} from "./classSchedule";
 import {toDate} from "./days";
+import {usePrefs} from "./prefs";
 import {createClient} from "./supabase/client";
 import {toMinutes} from "./time";
 
@@ -73,7 +74,7 @@ const ClassesContext = createContext<Classes | null>(null);
 export function ClassesProvider({userId, children}: {userId: string | null; children: ReactNode}) {
   const [classes, setClasses] = useState<ClassMeeting[]>([]);
   const [loaded, setLoaded] = useState(false);
-  const [prefs, setPrefs] = useState<Record<string, unknown> | null>(null);
+  const {prefs, setPrefs} = usePrefs();
 
   useEffect(() => {
     if (!userId) return;
@@ -87,32 +88,13 @@ export function ClassesProvider({userId, children}: {userId: string | null; chil
         setClasses((data as Row[]).map(fromRow));
         setLoaded(true);
       });
-    createClient()
-      .from("user_settings")
-      .select("prefs")
-      .eq("user_id", userId)
-      .maybeSingle()
-      .then(({data}) => {
-        // No settings yet (or the prefs column isn't set up): nothing has been dismissed.
-        if (current) setPrefs((data?.prefs as Record<string, unknown> | undefined) ?? {});
-      });
     return () => {
       current = false;
     };
   }, [userId]);
 
   // Remembered on the account, so the question isn't asked again on another device.
-  const dismissPrompt = () => {
-    if (!userId) return;
-    const next = {...prefs, classPromptDismissed: true};
-    setPrefs(next);
-    createClient()
-      .from("user_settings")
-      .upsert({user_id: userId, prefs: next})
-      .then(() => {
-        // If this fails the question just comes back next visit; there's nothing to undo here.
-      });
-  };
+  const dismissPrompt = () => setPrefs({classPromptDismissed: true});
 
   const addMeetings = async (meetings: Meeting[]) => {
     if (!userId) throw new Error("Not logged in");
@@ -151,7 +133,7 @@ export function ClassesProvider({userId, children}: {userId: string | null; chil
       value={{
         classes,
         loaded,
-        promptDismissed: prefs === null ? null : prefs.classPromptDismissed === true,
+        promptDismissed: prefs === null ? null : prefs.classPromptDismissed,
         dismissPrompt,
         addMeetings,
         removeMeetings,

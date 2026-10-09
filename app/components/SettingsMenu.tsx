@@ -7,6 +7,7 @@ import {forgetThisBrowser, useAccount} from "../lib/account";
 import {logOut} from "../lib/auth";
 import {useClasses} from "../lib/classes";
 import {formatDay} from "../lib/days";
+import {CLOCK_STYLES, START_MODES, usePrefs, type StartMode} from "../lib/prefs";
 import {useScene, type SceneStatus} from "../lib/scene";
 import {useSound} from "../lib/sound";
 import {THEMES, type Theme} from "../lib/themes";
@@ -36,6 +37,7 @@ const STATUS_TEXT: Record<Exclude<SceneStatus, "live">, string> = {
 const TABS = [
   {id: "theme", label: "Theme"},
   {id: "sound", label: "Sound"},
+  {id: "focus", label: "Focus"},
   {id: "classes", label: "Classes"},
 ] as const;
 type Tab = (typeof TABS)[number]["id"];
@@ -243,6 +245,63 @@ function SoundTab() {
   );
 }
 
+const START_LABELS: Record<StartMode, string> = {ask: "Ask each time", timer: "Study timer", clock: "Clock"};
+const START_HINTS: Record<StartMode, string> = {
+  ask: "Choose between the study timer and the clock whenever you start a session",
+  timer: "Start? opens the study timer: a countdown for the session, with breaks",
+  clock: "Start? opens the clock: just the time over the scene",
+};
+
+// What "Start?" opens, and the clock's style.
+function FocusTab({onNavigate}: {onNavigate: () => void}) {
+  const {prefs, setPrefs} = usePrefs();
+  if (!prefs) return <p className="text-xs text-white/55">Loading…</p>;
+  const style = CLOCK_STYLES.find((c) => c.id === prefs.clockStyle) ?? CLOCK_STYLES[0];
+
+  return (
+    <div className="space-y-5">
+      <fieldset>
+        <legend className="text-xs uppercase tracking-[0.25em] text-white">When you press Start?</legend>
+        <p className="mt-1 text-xs text-white/55">{START_HINTS[prefs.startMode]}</p>
+        <div className="mt-2.5 flex flex-wrap gap-1.5">
+          {START_MODES.map((m) => (
+            <button
+              key={m}
+              type="button"
+              aria-pressed={prefs.startMode === m}
+              // Choosing here counts as having been asked, so Start? won't ask about a default.
+              onClick={() => setPrefs({startMode: m, startDefaultAsked: true})}
+              className={pill(prefs.startMode === m)}
+            >
+              {START_LABELS[m]}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend className="text-xs uppercase tracking-[0.25em] text-white">Clock style</legend>
+        <p className="mt-1 text-xs text-white/55">{style.hint}. You can also swipe between styles on the clock.</p>
+        <div className="mt-2.5 flex flex-wrap gap-1.5">
+          {CLOCK_STYLES.map((c) => (
+            <button key={c.id} type="button" aria-pressed={prefs.clockStyle === c.id} onClick={() => setPrefs({clockStyle: c.id})} className={pill(prefs.clockStyle === c.id)}>
+              {c.label}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+
+      <Link
+        href="/clock"
+        onClick={onNavigate}
+        className="block rounded-md bg-white/[0.06] px-3 py-2 text-center text-[11px] uppercase tracking-[0.15em] text-white/80 transition hover:bg-white/[0.12] hover:text-white"
+      >
+        Open the clock
+      </Link>
+    </div>
+  );
+}
+
 // What's been imported from the class schedule, and the way to add or change it.
 function ClassesTab({onNavigate}: {onNavigate: () => void}) {
   const {classes, loaded} = useClasses();
@@ -382,6 +441,7 @@ export default function SettingsMenu() {
           <div id={`settings-panel-${tab}`} role="tabpanel" aria-labelledby={`settings-tab-${tab}`} className="mt-4">
             {tab === "theme" && <ThemeTab />}
             {tab === "sound" && <SoundTab />}
+            {tab === "focus" && <FocusTab onNavigate={close} />}
             {tab === "classes" && <ClassesTab onNavigate={close} />}
           </div>
 

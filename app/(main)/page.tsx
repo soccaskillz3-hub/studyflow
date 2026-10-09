@@ -4,6 +4,7 @@ import Link from "next/link";
 import {useEffect, useLayoutEffect, useRef, useState} from "react";
 import SectionLabel from "../components/SectionLabel";
 import SessionList from "../components/SessionList";
+import StartButton from "../components/StartButton";
 import Flame from "../components/Flame";
 import WeekBars from "../components/WeekBars";
 import {takeCelebration, type Celebration} from "../lib/celebrate";
@@ -110,6 +111,10 @@ function ProgressLine({
 }
 
 const linkClass = "text-scene-soft underline decoration-scene/40 underline-offset-4 transition hover:text-scene-ink";
+const primaryButton =
+  "border border-scene/70 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.25em] text-scene-ink transition hover:bg-scene/15 active:scale-[0.98]";
+const secondaryButton =
+  "border border-white/30 px-4 py-1.5 text-xs uppercase tracking-[0.25em] text-white/80 transition hover:border-white/60 hover:text-white active:scale-[0.98]";
 
 // The week at a glance: time studied against planned, the streak, and a bar for each day.
 function WeekSummary({
@@ -142,40 +147,46 @@ function WeekSummary({
       </div>
 
       <div className="mt-6 flex flex-wrap items-end justify-between gap-x-8 gap-y-6">
-        <div>
-          <div className="flex flex-wrap items-end gap-x-4 gap-y-1">
-            <p className="text-5xl font-semibold leading-none tracking-tight tabular-nums sm:text-6xl">
-              {loaded ? formatMinutes(Math.round(shownDone)) : " "}
+        {loaded && !planned ? (
+          <div className="max-w-sm">
+            <p className="font-display text-4xl leading-none sm:text-5xl">A fresh week</p>
+            <p className="mt-4 text-sm leading-relaxed text-white/70">
+              Plan a few study sessions and your week fills in here, day by day.
             </p>
-            {loaded && (
-              <p className="pb-1 text-sm text-scene-soft tabular-nums">
-                {planned ? `of ${formatMinutes(planned)} planned` : "studied"}
-              </p>
-            )}
+            <Link href="/calendar/week" className={`mt-5 inline-block ${primaryButton}`}>
+              Plan your week
+            </Link>
           </div>
-          <p className="mt-3 text-[11px] uppercase tracking-[0.3em] text-white/65">
-            {!loaded ? (
-              " "
-            ) : planned ? (
-              `Studied on ${studiedDays} of 7 days`
-            ) : (
-              <Link href="/calendar/week" className={linkClass}>
-                Plan your week
-              </Link>
-            )}
-          </p>
-        </div>
+        ) : (
+          <div>
+            <div className="flex flex-wrap items-end gap-x-4 gap-y-1">
+              <p className="text-5xl font-semibold leading-none tracking-tight tabular-nums sm:text-6xl">
+                {loaded ? formatMinutes(Math.round(shownDone)) : " "}
+              </p>
+              {loaded && (
+                <p className="pb-1 text-sm text-scene-soft tabular-nums">
+                  of {formatMinutes(planned)} planned
+                </p>
+              )}
+            </div>
+            <p className="mt-3 text-[11px] uppercase tracking-[0.3em] text-white/65">
+              {loaded ? `Studied on ${studiedDays} of 7 days` : " "}
+            </p>
+          </div>
+        )}
 
         {/* Kept the same size while it loads, so nothing jumps. */}
         <div className={`flex items-center gap-3 ${streak ? "" : "invisible"}`}>
           <Flame lit={streak?.studiedToday ?? false} className="h-8 w-8" />
           <div>
-            <p className="text-3xl font-semibold leading-none tabular-nums">
-              {streak?.current ?? 0}
-              <span className="ml-2 text-sm font-normal text-scene-soft">
-                day streak
-              </span>
-            </p>
+            {streak?.current ? (
+              <p className="text-3xl font-semibold leading-none tabular-nums">
+                {streak.current}
+                <span className="ml-2 text-sm font-normal text-scene-soft">day streak</span>
+              </p>
+            ) : (
+              <p className="text-lg leading-none text-white/90">{streak?.best ? "Start a new streak" : "No streak yet"}</p>
+            )}
             <p className="mt-2 text-[11px] text-white/60">
               {!streak
                 ? " "
@@ -183,15 +194,20 @@ function WeekSummary({
                   ? "Today counts. Nice work."
                   : streak.current
                     ? "Finish a session today to keep it"
-                    : "Finish a session today to start one"}
+                    : streak.best
+                      ? `Your best is ${streak.best} ${streak.best === 1 ? "day" : "days"}`
+                      : "One finished session starts it"}
             </p>
           </div>
         </div>
       </div>
 
-      <div className="mt-8">
-        <WeekBars totals={totals} today={today} height={56} labels={false} />
-      </div>
+      {/* An empty week has nothing to chart yet. */}
+      {(!loaded || planned > 0) && (
+        <div className="mt-8">
+          <WeekBars totals={totals} today={today} height={56} labels={false} />
+        </div>
+      )}
     </section>
   );
 }
@@ -204,7 +220,7 @@ export default function Dashboard() {
 }
 
 function DashboardView({today}: {today: string}) {
-  const {sessions, completed} = useSchedule();
+  const {sessions, completed, loaded} = useSchedule();
   // Coming back from a finished focus session: start at the old total, then animate up.
   const [celebration, setCelebration] = useState<Celebration | null>(null);
   const [settled, setSettled] = useState(false);
@@ -250,83 +266,101 @@ function DashboardView({today}: {today: string}) {
         loaded={week.loaded}
       />
 
-      <section className="mt-16">
-        <SectionLabel>Today</SectionLabel>
-        <div className="mt-6 flex flex-wrap items-end gap-x-5 gap-y-2">
-          <p className="text-4xl font-semibold leading-none tracking-tight tabular-nums sm:text-5xl">
-            {formatMinutes(Math.round(shownDone))}
+      {!loaded ? (
+        // Today's schedule is still loading: hold the space rather than flash "nothing planned".
+        <div className="mt-16 h-64" aria-busy />
+      ) : sessions.length === 0 ? (
+        <section className="mt-16">
+          <SectionLabel>Today</SectionLabel>
+          <p className="mt-6 text-3xl font-semibold tracking-tight text-white/90">Nothing planned today</p>
+          <p className="mt-3 max-w-md text-sm leading-relaxed text-white/65">
+            Add a study session when you&apos;re ready, or just open the clock and enjoy the view.
           </p>
-          <p className="pb-1.5 text-sm text-scene-soft tabular-nums">of {formatMinutes(plannedMinutes)} planned</p>
-        </div>
-        <ProgressLine
-          done={targetDone}
-          planned={plannedMinutes}
-          gain={celebration && settled ? celebration.minutes : null}
-          instant={resetting}
-        />
-        <p className="mt-2 text-[11px] uppercase tracking-[0.3em] text-scene-soft">
-          {studySessions.length === 0
-            ? "No study sessions yet"
-            : `${doneCount} of ${studySessions.length} sessions done · ${percent}%`}
-        </p>
-      </section>
-
-      <section className="mt-16">
-        <SectionLabel>Next up</SectionLabel>
-        <div className="mt-5 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-          {nextSession ? (
-            <>
-              <p className="text-3xl font-semibold tracking-tight">{nextSession.subject}</p>
-              <div className="flex items-center gap-4">
-                <p className="text-sm text-scene-soft tabular-nums">
-                  {formatTime(nextSession.start)} – {formatTime(nextSession.end)}
-                </p>
-                <Link
-                  href={`/focus/${nextSession.id}`}
-                  className="border border-scene/70 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.25em] text-scene-ink transition hover:bg-scene/15 active:scale-[0.98]"
-                >
-                  Start?
-                </Link>
-              </div>
-            </>
-          ) : studySessions.length > 0 ? (
-            <>
-              <p className="text-3xl font-semibold tracking-tight">All done</p>
-              <p className="text-sm text-white/70">Nothing left today. Rest well.</p>
-            </>
-          ) : (
-            <>
-              <p className="text-3xl font-semibold tracking-tight text-white/85">Nothing planned</p>
-              <Link href="/calendar/schedule" className={`text-sm ${linkClass}`}>
-                Plan your day
-              </Link>
-            </>
-          )}
-        </div>
-      </section>
-
-      <section className="mt-16">
-        <SectionLabel>Today&apos;s sessions</SectionLabel>
-        <div className="mt-6">
-          <SessionList
-            empty={
-              <>
-                Nothing scheduled yet.{" "}
-                <Link href="/calendar/schedule" className={linkClass}>
-                  Add sessions
-                </Link>
-              </>
-            }
-          />
-        </div>
-        {sessions.length > 0 && (
-          <p className="mt-4 text-right text-xs uppercase tracking-[0.2em]">
-            <Link href="/calendar/schedule" className={linkClass}>
-              Edit schedule
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link href="/calendar/schedule" className={primaryButton}>
+              Add a session
             </Link>
-          </p>
-        )}
-      </section>
+            <Link href="/clock" className={secondaryButton}>
+              Open the clock
+            </Link>
+          </div>
+        </section>
+      ) : (
+        <>
+          <section className="mt-16">
+            <SectionLabel>Today</SectionLabel>
+            <div className="mt-6 flex flex-wrap items-end gap-x-5 gap-y-2">
+              <p className="text-4xl font-semibold leading-none tracking-tight tabular-nums sm:text-5xl">
+                {formatMinutes(Math.round(shownDone))}
+              </p>
+              <p className="pb-1.5 text-sm text-scene-soft tabular-nums">of {formatMinutes(plannedMinutes)} planned</p>
+            </div>
+            <ProgressLine
+              done={targetDone}
+              planned={plannedMinutes}
+              gain={celebration && settled ? celebration.minutes : null}
+              instant={resetting}
+            />
+            <p className="mt-2 text-[11px] uppercase tracking-[0.3em] text-scene-soft">
+              {studySessions.length === 0
+                ? "No study sessions yet"
+                : `${doneCount} of ${studySessions.length} sessions done · ${percent}%`}
+            </p>
+          </section>
+
+          <section className="mt-16">
+            <SectionLabel>Next up</SectionLabel>
+            <div className="mt-5 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+              {nextSession ? (
+                <>
+                  <p className="text-3xl font-semibold tracking-tight">{nextSession.subject}</p>
+                  <div className="flex items-center gap-4">
+                    <p className="text-sm text-scene-soft tabular-nums">
+                      {formatTime(nextSession.start)} – {formatTime(nextSession.end)}
+                    </p>
+                    <StartButton session={nextSession} className={primaryButton} />
+                  </div>
+                </>
+              ) : studySessions.length > 0 ? (
+                <>
+                  <p className="text-3xl font-semibold tracking-tight">All done</p>
+                  <p className="text-sm text-white/70">Nothing left today. Rest well.</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-3xl font-semibold tracking-tight text-white/85">Nothing planned</p>
+                  <Link href="/calendar/schedule" className={`text-sm ${linkClass}`}>
+                    Plan your day
+                  </Link>
+                </>
+              )}
+            </div>
+          </section>
+
+          <section className="mt-16">
+            <SectionLabel>Today&apos;s sessions</SectionLabel>
+            <div className="mt-6">
+              <SessionList
+                empty={
+                  <>
+                    Nothing scheduled yet.{" "}
+                    <Link href="/calendar/schedule" className={linkClass}>
+                      Add sessions
+                    </Link>
+                  </>
+                }
+              />
+            </div>
+            {sessions.length > 0 && (
+              <p className="mt-4 text-right text-xs uppercase tracking-[0.2em]">
+                <Link href="/calendar/schedule" className={linkClass}>
+                  Edit schedule
+                </Link>
+              </p>
+            )}
+          </section>
+        </>
+      )}
     </>
   );
 }

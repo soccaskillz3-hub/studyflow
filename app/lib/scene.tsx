@@ -17,6 +17,7 @@ type Scene = {
   weather: Weather; // what's showing: the override if set, else live weather
   time: TimeOfDay;
   live: Weather | null; // weather at the visitor's location, once known
+  sun: SunTimes | null; // today's sunrise and sunset there, once known
   status: SceneStatus;
   weatherOverride: Weather | null; // null = automatic
   timeOverride: TimeOfDay | null;
@@ -129,6 +130,7 @@ export function SceneProvider({children}: {children: ReactNode}) {
         weather,
         time,
         live: live?.weather ?? null,
+        sun: live?.sun ?? null,
         status,
         weatherOverride,
         timeOverride,

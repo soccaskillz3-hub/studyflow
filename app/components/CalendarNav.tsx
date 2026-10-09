@@ -1,4 +1,9 @@
+"use client";
+
 import Link from "next/link";
+import {useRouter} from "next/navigation";
+import {useEffect, useRef, type RefObject} from "react";
+import {useSwipe} from "../lib/useSwipe";
 
 const arrow =
   "flex h-8 w-8 items-center justify-center rounded-md text-white/70 transition hover:bg-white/[0.08] hover:text-white";
@@ -12,6 +17,8 @@ function Chevron({flip = false}: {flip?: boolean}) {
 }
 
 // Back / forward through days or weeks, with a jump back to the current one when away from it.
+// With `swipeArea`, swiping sideways across that element (a finger, or two fingers on a
+// trackpad) does the same as the arrows, and the content follows the gesture a little.
 export default function CalendarNav({
   prev,
   next,
@@ -20,6 +27,7 @@ export default function CalendarNav({
   atHome,
   prevLabel,
   nextLabel,
+  swipeArea,
 }: {
   prev: string;
   next: string;
@@ -28,7 +36,21 @@ export default function CalendarNav({
   atHome: boolean;
   prevLabel: string; // for screen readers: "Previous day"
   nextLabel: string;
+  swipeArea?: RefObject<HTMLElement | null>;
 }) {
+  const router = useRouter();
+  const noArea = useRef<HTMLElement>(null);
+  const {settle} = useSwipe(swipeArea ?? noArea, {
+    enabled: Boolean(swipeArea),
+    follow: true,
+    onSwipe: (direction) => router.push(direction > 0 ? next : prev, {scroll: false}),
+  });
+
+  // New links mean the new day or week has arrived: slide it into place.
+  useEffect(() => {
+    settle();
+  }, [prev, next, settle]);
+
   return (
     <nav aria-label="Calendar navigation" className="flex items-center gap-1">
       {!atHome && (

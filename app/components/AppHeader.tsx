@@ -91,7 +91,8 @@ export default function AppHeader() {
           STUDYFLOW
         </Link>
         <div className="flex items-center gap-4 sm:gap-5">
-          <p className="whitespace-nowrap text-[11px] uppercase tracking-[0.2em] text-white/75 sm:tracking-[0.3em]">
+          {/* The narrowest phones don't have room for the date next to the buttons. */}
+          <p className="whitespace-nowrap text-[11px] uppercase tracking-[0.2em] text-white/75 max-[359px]:hidden sm:tracking-[0.3em]">
             <span className="hidden sm:inline" suppressHydrationWarning>
               {today}
             </span>
@@ -99,6 +100,17 @@ export default function AppHeader() {
               {todayShort}
             </span>
           </p>
+          <Link
+            href="/clock"
+            aria-label="Open the clock"
+            title="Clock"
+            className="-m-2 flex h-9 w-9 items-center justify-center rounded-md text-white/75 transition hover:bg-white/[0.06] hover:text-white"
+          >
+            <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+              <circle cx="8" cy="8" r="5.8" />
+              <path d="M8 4.8V8l2.2 1.4" />
+            </svg>
+          </Link>
           <MuteButton />
           <SettingsMenu />
         </div>

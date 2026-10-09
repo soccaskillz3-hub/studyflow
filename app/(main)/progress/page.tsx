@@ -1,6 +1,6 @@
 "use client";
 
-import {use} from "react";
+import {use, useRef} from "react";
 import CalendarNav from "../../components/CalendarNav";
 import SectionLabel from "../../components/SectionLabel";
 import Flame from "../../components/Flame";
@@ -83,11 +83,12 @@ function StreakSection({history, today}: {history: History; today: string}) {
 
 function WeekSection({start, today}: {start: string; today: string}) {
   const {totals, loaded, planned, done, studiedDays, subjects} = useWeek(start);
+  const swipeArea = useRef<HTMLElement>(null);
   const thisWeek = start === weekStart(today);
   const subjectScale = Math.max(...subjects.map((t) => t.planned), 1);
 
   return (
-    <section className="mt-16">
+    <section ref={swipeArea} className="mt-16">
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0 flex-1">
           <SectionLabel>{thisWeek ? "This week" : `Week of ${formatDay(start, {month: "short", day: "numeric"})}`}</SectionLabel>
@@ -100,6 +101,7 @@ function WeekSection({start, today}: {start: string; today: string}) {
           atHome={thisWeek}
           prevLabel="Previous week"
           nextLabel="Next week"
+          swipeArea={swipeArea}
         />
       </div>
 

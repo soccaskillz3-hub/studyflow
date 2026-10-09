@@ -365,7 +365,40 @@ body {
   100% { opacity: 0; transform: translate(-50%, -18px); }
 }
 
+/* ---------- Clock ----------
+   Full-screen like the focus timer, but lighter: just a vignette, so more of the scene shows. */
+
+.sf-clock {
+  background: radial-gradient(ellipse 75% 60% at 50% 48%, transparent 0%, rgba(4, 8, 20, 0.5) 100%),
+    linear-gradient(rgba(4, 8, 20, 0.22), rgba(4, 8, 20, 0.22));
+}
+.sf-clock-glow {
+  color: #f8fafc;
+  text-shadow: 0 0 40px color-mix(in srgb, var(--accent-glow) 60%, transparent), 0 0 120px color-mix(in srgb, var(--accent-glow) 45%, transparent);
+}
+.sf-clock-colon { animation: sf-colon 2s ease-in-out infinite; }
+.sf-clock-dial { filter: drop-shadow(0 0 30px rgba(0, 0, 0, 0.35)); }
+.sf-clock-hand { filter: drop-shadow(0 0 4px color-mix(in srgb, var(--accent-glow) 70%, transparent)); }
+.sf-clock-second {
+  transform-box: view-box;
+  transform-origin: 100px 100px;
+  filter: drop-shadow(0 0 3px var(--accent-glow));
+}
+@keyframes sf-clock-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes sf-clock-fill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@keyframes sf-clock-ring {
+  from { stroke-dashoffset: var(--ring); }
+  to { stroke-dashoffset: 0; }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .sf-clock-colon,
   .sf-focus-time,
   .sf-focus-time .sf-focus-colon,
   .sf-spark,

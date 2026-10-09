@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import {useRouter} from "next/navigation";
-import {use, useEffect, useState} from "react";
+import {use, useEffect, useRef, useState} from "react";
 import CalendarNav from "../../../components/CalendarNav";
 import SectionLabel from "../../../components/SectionLabel";
 import {classesOn, useClasses} from "../../../lib/classes";
@@ -25,6 +25,7 @@ export default function WeekPage({searchParams}: PageProps<"/calendar/week">) {
 
 function WeekView({start, today}: {start: string; today: string}) {
   const router = useRouter();
+  const swipeArea = useRef<HTMLElement>(null);
   const {sessionsOn, isLoaded, loadDays, completed} = useSchedule();
   const {classes} = useClasses();
   const [clock, setClock] = useState<number | null>(null);
@@ -79,7 +80,7 @@ function WeekView({start, today}: {start: string; today: string}) {
   )}`;
 
   return (
-    <section className="mt-12">
+    <section ref={swipeArea} className="mt-12">
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0 flex-1">
           <SectionLabel>{thisWeek ? "This week" : `Week of ${formatDay(start, {month: "short", day: "numeric"})}`}</SectionLabel>
@@ -92,6 +93,7 @@ function WeekView({start, today}: {start: string; today: string}) {
           atHome={thisWeek}
           prevLabel="Previous week"
           nextLabel="Next week"
+          swipeArea={swipeArea}
         />
       </div>
       <div className="mt-5 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">

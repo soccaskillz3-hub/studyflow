@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import {use, useCallback, useEffect, useRef, useState} from "react";
 import CalendarNav from "../../components/CalendarNav";
+import StartButton from "../../components/StartButton";
 import SectionLabel from "../../components/SectionLabel";
 import SessionForm from "../../components/SessionForm";
 import {classesOn, useClasses} from "../../lib/classes";
@@ -26,6 +26,7 @@ export default function CalendarPage({searchParams}: PageProps<"/calendar">) {
 }
 
 function DayView({day, isToday}: {day: string; isToday: boolean}) {
+  const swipeArea = useRef<HTMLElement>(null);
   const {sessionsOn, isLoaded, loadDays, completed, toggle} = useSchedule();
   const {classes} = useClasses();
   // The current time, for today only. Null until mounted: the server doesn't know the visitor's local time.
@@ -130,7 +131,7 @@ function DayView({day, isToday}: {day: string; isToday: boolean}) {
   }
 
   return (
-    <section className="mt-12">
+    <section ref={swipeArea} className="mt-12">
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0 flex-1">
           <SectionLabel>{isToday ? "Today" : formatDay(day, {weekday: "long"})}</SectionLabel>
@@ -143,6 +144,7 @@ function DayView({day, isToday}: {day: string; isToday: boolean}) {
           atHome={isToday}
           prevLabel="Previous day"
           nextLabel="Next day"
+          swipeArea={swipeArea}
         />
       </div>
       <div className="mt-5 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
@@ -316,15 +318,12 @@ function DayView({day, isToday}: {day: string; isToday: boolean}) {
                       </span>
                     </button>
                     {canStart && (
-                      <Link
-                        href={`/focus/${session.id}`}
-                        aria-label={`Start a focus timer for ${session.subject}`}
+                      <StartButton
+                        session={session}
                         className={`absolute right-1.5 rounded border border-scene/60 bg-slate-950/75 px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] text-scene-ink transition hover:bg-scene/20 ${
                           compact ? "top-1/2 -translate-y-1/2" : "top-1.5"
                         }`}
-                      >
-                        Start?
-                      </Link>
+                      />
                     )}
                   </div>
                 );
