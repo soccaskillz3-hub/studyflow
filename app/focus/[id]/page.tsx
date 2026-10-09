@@ -178,7 +178,7 @@ export default function FocusPage() {
   const {weather} = useScene();
   const timer = useFocusTimer(session ? session.id : null, session ? sessionMinutes(session) : 0);
   const [picking, setPicking] = useState(false);
-  // After "Done": celebrate, fade out, then land on Today where the progress animates up.
+  // After "Done": celebrate, fade out, then land on the dashboard where the progress animates up.
   const [celebrating, setCelebrating] = useState<{minutes: number | null} | null>(null);
   const [leaving, setLeaving] = useState(false);
 
@@ -274,10 +274,10 @@ export default function FocusPage() {
       <SnowPile snowing={snowing} />
       <header className="relative flex items-center justify-between gap-4 px-5 pt-6 sm:px-10 sm:pt-8">
         <Link
-          href="/calendar"
+          href="/"
           className="flex items-center gap-2 text-[11px] uppercase tracking-[0.3em] text-white/70 transition hover:text-white"
         >
-          <span aria-hidden>←</span> Calendar
+          <span aria-hidden>←</span> Dashboard
         </Link>
         <div className="flex items-center gap-5">
           <p className="hidden text-[11px] uppercase tracking-[0.3em] text-white/60 tabular-nums sm:block">

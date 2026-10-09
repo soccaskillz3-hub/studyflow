@@ -2,6 +2,7 @@
 
 import {useEffect, useState} from "react";
 import {useAccount} from "./account";
+import {useClasses} from "./classes";
 import {addDays, weekDays} from "./days";
 import {sessionMinutes, useSchedule, type Session} from "./schedule";
 import {createClient} from "./supabase/client";
@@ -102,10 +103,28 @@ export function intensity(done: number) {
 
 export type SubjectTotal = {subject: string; planned: number; done: number};
 
+// A course code at the start of a session's name, written in capitals ("CS 135", "MATH137B").
+const COURSE_CODE = /^([A-Z]{2,8})\s*(\d{2,4}[A-Z]?)\b/;
+
+// What to group a session under on the Progress page: its course when the name starts with one
+// ("CS 135 assignment" and "CS 135 lab prep" both count for CS 135), otherwise the name itself.
+// Imported class codes match in any case; other names need a capitalised code, so ordinary
+// names like "Week 10 notes" aren't mistaken for courses.
+export function courseOf(subject: string, codes: string[]) {
+  const name = subject.trim().replace(/\s+/g, " ");
+  const upper = name.toUpperCase();
+  const known = codes.find((code) => upper === code || upper.startsWith(`${code} `));
+  if (known) return known;
+  const match = name.match(COURSE_CODE);
+  return match ? `${match[1]} ${match[2]}` : name;
+}
+
 // One week (Monday to Sunday) from the schedule, loading it if needed: each day's totals, the
-// week's, and time per subject, most studied first. Live, so ticking a session off shows at once.
+// week's, and time per subject (by course where there is one), most studied first. Live, so ticking a session off shows at once.
 export function useWeek(start: string) {
   const {sessionsOn, isLoaded, loadDays, completed} = useSchedule();
+  const {classes} = useClasses();
+  const codes = [...new Set(classes.map((c) => c.code.toUpperCase().replace(/\s+/g, " ")))];
   const days = weekDays(start);
   const end = days[6];
 
@@ -118,10 +137,11 @@ export function useWeek(start: string) {
   const bySubject = new Map<string, SubjectTotal>();
   for (const s of days.flatMap((d) => sessionsOn(d))) {
     if (s.isBreak) continue;
-    const entry = bySubject.get(s.subject) ?? {subject: s.subject, planned: 0, done: 0};
+    const subject = courseOf(s.subject, codes);
+    const entry = bySubject.get(subject) ?? {subject, planned: 0, done: 0};
     entry.planned += sessionMinutes(s);
     if (completed.includes(s.id)) entry.done += sessionMinutes(s);
-    bySubject.set(s.subject, entry);
+    bySubject.set(subject, entry);
   }
 
   return {

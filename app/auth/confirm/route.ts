@@ -3,23 +3,23 @@ import {cookies} from "next/headers";
 import {redirect} from "next/navigation";
 import type {NextRequest} from "next/server";
 import {RESET_PENDING_COOKIE} from "../../lib/resetPending";
+import {safeNext} from "../../lib/safeNext";
 import {createClient} from "../../lib/supabase/server";
 
 // Where the links in StudyFlow's emails land (confirming a new account, resetting a password).
 // A valid link logs the person in and sends them on to `next`.
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
-  const next = params.get("next") ?? "/";
-  const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "/";
+  const next = safeNext(params.get("next"));
   const supabase = await createClient();
 
   // A password reset link logs the person in so they can choose a new password. Until they do
   // (or cancel), the proxy keeps them on the reset page rather than letting them into the app.
   const loggedIn = async () => {
-    if (safeNext === "/reset-password") {
+    if (next === "/reset-password") {
       (await cookies()).set(RESET_PENDING_COOKIE, "1", {httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60});
     }
-    redirect(safeNext);
+    redirect(next);
   };
 
   // Links built from the token hash work on any device (see the README's Supabase setup).

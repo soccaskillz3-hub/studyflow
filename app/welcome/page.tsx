@@ -3,12 +3,12 @@ import DevLogin from "../components/DevLogin";
 import SectionLabel from "../components/SectionLabel";
 
 // The front door for people who aren't logged in. The proxy shows it at "/" (and sends
-// logged-in visitors straight to Today instead).
+// logged-in visitors straight to the dashboard instead).
 
 const FEATURES = [
-  {title: "Plan", text: "Lay out your day's study sessions and breaks on a calendar."},
-  {title: "Focus", text: "Start a session for a full-screen timer, with breaks when you need them."},
-  {title: "Track", text: "Watch today's progress fill in as you check sessions off."},
+  {title: "Plan", text: "Paste your class schedule, then fit study sessions around it, day by day or week by week."},
+  {title: "Focus", text: "Press Start for a full-screen study timer with breaks, or just a calm clock over the scene."},
+  {title: "Track", text: "Keep a streak going, and see your week, your courses and months of studying at a glance."},
 ];
 
 export default function WelcomePage() {

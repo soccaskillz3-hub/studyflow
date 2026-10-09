@@ -4,6 +4,7 @@ import type {AuthError} from "@supabase/supabase-js";
 import {cookies, headers} from "next/headers";
 import {redirect} from "next/navigation";
 import {RESET_PENDING_COOKIE} from "./resetPending";
+import {safeNext} from "./safeNext";
 import {createClient} from "./supabase/server";
 
 export type AuthState = {error?: string; sent?: string} | null;
@@ -15,8 +16,6 @@ const text = (form: FormData, name: string) => {
   return typeof value === "string" ? value.trim() : "";
 };
 
-// Only follow redirects within the site ("/calendar", not "//evil.example" or a full URL).
-const safeNext = (next: string) => (next.startsWith("/") && !next.startsWith("//") ? next : "/");
 
 // Where email links (confirm the account, reset the password) should bring people back to.
 async function siteUrl() {

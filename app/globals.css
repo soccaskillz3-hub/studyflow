@@ -352,7 +352,7 @@ body {
   to { opacity: 1; transform: none; }
 }
 
-/* Today, arriving from a finished session: the bar glows while it fills, and the gain floats up. */
+/* The dashboard, arriving from a finished session: the bar glows while it fills, and the gain floats up. */
 .sf-bar-boost { animation: sf-bar-boost 1.6s ease-in-out 2; }
 @keyframes sf-bar-boost {
   0%, 100% { box-shadow: 0 0 14px var(--accent-glow); }

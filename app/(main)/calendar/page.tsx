@@ -27,7 +27,7 @@ export default function CalendarPage({searchParams}: PageProps<"/calendar">) {
 
 function DayView({day, isToday}: {day: string; isToday: boolean}) {
   const swipeArea = useRef<HTMLElement>(null);
-  const {sessionsOn, isLoaded, loadDays, completed, toggle} = useSchedule();
+  const {sessionsOn, isLoaded, loadDays, completed, toggle, removeSession} = useSchedule();
   const {classes} = useClasses();
   // The current time, for today only. Null until mounted: the server doesn't know the visitor's local time.
   const [clock, setClock] = useState<number | null>(null);
@@ -302,7 +302,7 @@ function DayView({day, isToday}: {day: string; isToday: boolean}) {
                       aria-label={`${session.subject}, ${formatTime(session.start)} to ${formatTime(session.end)}${done ? ", done" : ""}`}
                       className={`relative flex h-full w-full min-w-0 px-2.5 text-left ${
                         compact ? "items-center gap-2 py-0.5" : "flex-col py-1.5"
-                      } ${canStart ? "pr-[4.75rem]" : ""}`}
+                      } ${canStart ? "pr-[6.5rem]" : "pr-9"}`}
                     >
                       <span
                         className={`block truncate text-sm ${
@@ -317,10 +317,22 @@ function DayView({day, isToday}: {day: string; isToday: boolean}) {
                         {formatTime(session.start)} – {formatTime(session.end)}
                       </span>
                     </button>
+                    {/* Remove: shown on hover with a mouse, always on touch screens (no hover there). */}
+                    <button
+                      type="button"
+                      onClick={() => removeSession(session.id)}
+                      aria-label={`Remove ${session.subject}`}
+                      title="Remove"
+                      className={`absolute right-1 flex h-6 w-6 items-center justify-center rounded text-base leading-none text-white/50 transition hover:bg-white/10 hover:text-rose-300 focus-visible:opacity-100 opacity-0 group-hover:opacity-100 pointer-coarse:opacity-100 ${
+                        compact ? "top-1/2 -translate-y-1/2" : "top-1"
+                      }`}
+                    >
+                      ×
+                    </button>
                     {canStart && (
                       <StartButton
                         session={session}
-                        className={`absolute right-1.5 rounded border border-scene/60 bg-slate-950/75 px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] text-scene-ink transition hover:bg-scene/20 ${
+                        className={`absolute right-8 rounded border border-scene/60 bg-slate-950/75 px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] text-scene-ink transition hover:bg-scene/20 ${
                           compact ? "top-1/2 -translate-y-1/2" : "top-1.5"
                         }`}
                       />

@@ -25,7 +25,7 @@ export default function SessionList({empty, removable = false}: {empty: ReactNod
               type="button"
               onClick={() => toggle(session.id)}
               aria-pressed={done}
-              className="flex flex-1 items-center gap-4 py-4 pl-2 text-left sm:gap-6"
+              className="flex min-w-0 flex-1 items-center gap-4 py-4 pl-2 text-left sm:gap-6"
             >
               <span
                 className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition ${
@@ -61,7 +61,7 @@ export default function SessionList({empty, removable = false}: {empty: ReactNod
                   {formatTime(session.start)} – {formatTime(session.end)}
                 </span>
               </span>
-              <span className={`text-sm tabular-nums ${done ? "text-white/40" : "text-white/70"} ${removable ? "" : "pr-2"}`}>
+              <span className={`shrink-0 text-sm tabular-nums ${done ? "text-white/40" : "text-white/70"} ${removable ? "" : "pr-2"}`}>
                 {formatMinutes(sessionMinutes(session))}
               </span>
             </button>

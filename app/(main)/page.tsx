@@ -8,10 +8,11 @@ import StartButton from "../components/StartButton";
 import Flame from "../components/Flame";
 import WeekBars from "../components/WeekBars";
 import {takeCelebration, type Celebration} from "../lib/celebrate";
+import {classesOn, useClasses} from "../lib/classes";
 import {weekStart} from "../lib/days";
 import {streaks, useStudyHistory, useWeek} from "../lib/history";
 import {sessionMinutes, useSchedule} from "../lib/schedule";
-import {formatMinutes, formatTime} from "../lib/time";
+import {formatMinutes, formatShortTime, formatTime, nowMinutes, toMinutes} from "../lib/time";
 
 // Hour ticks along the progress line: every hour, or every two for long days.
 function hourTicks(planned: number) {
@@ -212,6 +213,35 @@ function WeekSummary({
   );
 }
 
+// Today's classes in a line, in their own colour; the ones already over are dimmed.
+function ClassesToday({today, clock}: {today: string; clock: number}) {
+  const {classes} = useClasses();
+  const list = classesOn(classes, today);
+  if (!list.length) return null;
+  return (
+    <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs">
+      <span className="text-[11px] uppercase tracking-[0.3em] text-white/60">Classes</span>
+      {list.map((c) => (
+        <span key={c.id} className={`flex items-center gap-2 ${toMinutes(c.end) <= clock ? "text-white/40" : "text-white/85"}`}>
+          <span className="sf-class-block h-2.5 w-2.5 shrink-0 rounded-[2px] border border-l-[3px]" aria-hidden />
+          {c.code} {c.component}
+          <span className="text-white/50 tabular-nums">{formatShortTime(c.start)}</span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+// The time of day in minutes, kept current.
+function useClock() {
+  const [clock, setClock] = useState(nowMinutes);
+  useEffect(() => {
+    const id = setInterval(() => setClock(nowMinutes()), 30 * 1000);
+    return () => clearInterval(id);
+  }, []);
+  return clock;
+}
+
 // The dashboard: the week first, then today (progress, what's next, and today's sessions).
 export default function Dashboard() {
   const {today} = useSchedule();
@@ -252,7 +282,20 @@ function DashboardView({today}: {today: string}) {
   const week = useWeek(weekStart(today));
   const weekTarget = resetting ? Math.max(0, week.done - celebration.minutes) : week.done;
   const shownWeek = useAnimatedNumber(weekTarget, celebration ? 1400 : 700, resetting);
-  const nextSession = studySessions.find((s) => !completed.includes(s.id));
+  const clock = useClock();
+  const {classes} = useClasses();
+  const hasClasses = classesOn(classes, today).length > 0;
+  // What to do next: the session on now, or the next one coming up; failing those, one that was
+  // missed earlier today.
+  const undone = studySessions.filter((s) => !completed.includes(s.id));
+  const nextSession = undone.find((s) => toMinutes(s.end) > clock) ?? undone[0];
+  const nextState = !nextSession
+    ? null
+    : toMinutes(nextSession.end) <= clock
+      ? "missed"
+      : toMinutes(nextSession.start) <= clock
+        ? "now"
+        : "next";
   const doneCount = studySessions.filter((s) => completed.includes(s.id)).length;
 
   return (
@@ -272,10 +315,13 @@ function DashboardView({today}: {today: string}) {
       ) : sessions.length === 0 ? (
         <section className="mt-16">
           <SectionLabel>Today</SectionLabel>
-          <p className="mt-6 text-3xl font-semibold tracking-tight text-white/90">Nothing planned today</p>
+          <p className="mt-6 text-3xl font-semibold tracking-tight text-white/90">
+            {hasClasses ? "No study planned today" : "Nothing planned today"}
+          </p>
           <p className="mt-3 max-w-md text-sm leading-relaxed text-white/65">
             Add a study session when you&apos;re ready, or just open the clock and enjoy the view.
           </p>
+          <ClassesToday today={today} clock={clock} />
           <div className="mt-6 flex flex-wrap gap-3">
             <Link href="/calendar/schedule" className={primaryButton}>
               Add a session
@@ -306,17 +352,21 @@ function DashboardView({today}: {today: string}) {
                 ? "No study sessions yet"
                 : `${doneCount} of ${studySessions.length} sessions done · ${percent}%`}
             </p>
+            <ClassesToday today={today} clock={clock} />
           </section>
 
           <section className="mt-16">
-            <SectionLabel>Next up</SectionLabel>
+            <SectionLabel>{nextState === "now" ? "Now" : nextState === "missed" ? "Still to do" : "Next up"}</SectionLabel>
             <div className="mt-5 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
               {nextSession ? (
                 <>
-                  <p className="text-3xl font-semibold tracking-tight">{nextSession.subject}</p>
+                  <p className="min-w-0 break-words text-2xl font-semibold tracking-tight sm:text-3xl">{nextSession.subject}</p>
                   <div className="flex items-center gap-4">
                     <p className="text-sm text-scene-soft tabular-nums">
                       {formatTime(nextSession.start)} – {formatTime(nextSession.end)}
+                      {nextState === "now" && (
+                        <span className="text-white/55"> · {formatMinutes(toMinutes(nextSession.end) - clock)} left</span>
+                      )}
                     </p>
                     <StartButton session={nextSession} className={primaryButton} />
                   </div>

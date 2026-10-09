@@ -64,13 +64,24 @@ function StreakSection({history, today}: {history: History; today: string}) {
     <section className="mt-12">
       <SectionLabel>Streak</SectionLabel>
       <div className="mt-6 flex flex-wrap items-end gap-x-5 gap-y-2">
-        <p className="flex items-center gap-3 text-6xl font-semibold leading-none tracking-tight tabular-nums sm:text-7xl">
-          <Flame lit={studiedToday} className="h-10 w-10 sm:h-12 sm:w-12" />
-          {current}
-        </p>
-        <p className="pb-1.5 text-sm text-scene-soft tabular-nums">
-          {current === 1 ? "day" : "days"} in a row · best {best}
-        </p>
+        {current ? (
+          <>
+            <p className="flex items-center gap-3 text-6xl font-semibold leading-none tracking-tight tabular-nums sm:text-7xl">
+              <Flame lit={studiedToday} className="h-10 w-10 sm:h-12 sm:w-12" />
+              {current}
+            </p>
+            <p className="pb-1.5 text-sm text-scene-soft tabular-nums">
+              {current === 1 ? "day" : "days"} in a row · best {best}
+            </p>
+          </>
+        ) : (
+          // No streak running: words rather than a big zero.
+          <p className="flex items-center gap-3 font-display text-4xl leading-none sm:text-5xl">
+            <Flame lit={false} className="h-8 w-8 sm:h-10 sm:w-10" />
+            {best ? "Start a new streak" : "No streak yet"}
+            {best > 0 && <span className="self-end pb-1 font-mono text-sm text-scene-soft">best {best}</span>}
+          </p>
+        )}
       </div>
       <p className="mt-4 text-[11px] uppercase tracking-[0.3em] text-scene-soft">{nudge}</p>
       <p className="mt-6 text-sm text-white/75 tabular-nums">

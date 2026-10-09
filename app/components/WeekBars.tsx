@@ -18,8 +18,19 @@ export default function WeekBars({
   // Bars share one scale, with an hour as the smallest top so a light week doesn't look full.
   const scale = Math.max(60, ...totals.map((t) => Math.max(t.planned, t.done)));
 
+  // The bars are drawn, not read, so screen readers get the same week as a sentence.
+  const summary = totals
+    .filter((t) => t.planned > 0)
+    .map((t) => `${formatDay(t.day, {weekday: "long"})}: ${formatMinutes(t.done)} of ${formatMinutes(t.planned)}`)
+    .join("; ");
+
   return (
-    <div className="flex items-end gap-2 sm:gap-4" style={{height: height + (labels ? 44 : 26)}}>
+    <div
+      role="img"
+      aria-label={summary ? `Study by day. ${summary}.` : "No study planned this week."}
+      className="flex items-end gap-2 sm:gap-4"
+      style={{height: height + (labels ? 44 : 26)}}
+    >
       {totals.map((t) => {
         const future = t.day > today;
         return (

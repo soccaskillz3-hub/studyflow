@@ -79,9 +79,9 @@ export default function SessionForm({
           className={`${inputClass} md:min-w-0 md:flex-1`}
         />
         <div className="flex items-end gap-3">
-          <TimePicker value={start} onChange={setStart} label="Start time" suggestion={startSuggestion} />
+          <TimePicker value={start} onChange={setStart} label="Start time" placeholder="Start" suggestion={startSuggestion} />
           <span className="pb-2 text-xs text-white/50">to</span>
-          <TimePicker value={end} onChange={setEnd} label="End time" suggestion={endSuggestion} align="right" />
+          <TimePicker value={end} onChange={setEnd} label="End time" placeholder="End" suggestion={endSuggestion} align="right" />
         </div>
         <div className="flex items-center justify-between gap-4">
           <label className="flex cursor-pointer items-center gap-2 text-xs uppercase tracking-[0.2em] text-white/70">

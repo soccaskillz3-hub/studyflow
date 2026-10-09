@@ -306,6 +306,9 @@ function FocusTab({onNavigate}: {onNavigate: () => void}) {
 function ClassesTab({onNavigate}: {onNavigate: () => void}) {
   const {classes, loaded} = useClasses();
   const courses = new Set(classes.map((c) => c.code)).size;
+  // Tests and exams meet once (they start and end on the same day); the rest repeat each week.
+  const oneOff = classes.filter((c) => c.startsOn && c.startsOn === c.endsOn).length;
+  const weekly = classes.length - oneOff;
   const lastDay = classes.reduce<string | null>((latest, c) => (c.endsOn && (!latest || c.endsOn > latest) ? c.endsOn : latest), null);
   const link =
     "rounded-md px-3 py-2 text-center text-[11px] uppercase tracking-[0.15em] transition";
@@ -321,8 +324,8 @@ function ClassesTab({onNavigate}: {onNavigate: () => void}) {
       {loaded && classes.length > 0 ? (
         <p className="flex items-center gap-2.5 text-xs text-white/85">
           <span className="sf-class-block h-3 w-3 shrink-0 rounded-[3px] border border-l-[3px]" aria-hidden />
-          {courses} {courses === 1 ? "course" : "courses"} · {classes.length} weekly{" "}
-          {classes.length === 1 ? "class" : "classes"}
+          {courses} {courses === 1 ? "course" : "courses"} · {weekly} weekly
+          {oneOff > 0 && ` · ${oneOff} one-off`}
           {lastDay && ` · until ${formatDay(lastDay, {month: "short", day: "numeric"})}`}
         </p>
       ) : (

@@ -46,12 +46,13 @@ type Props = {
   value: string; // "HH:MM" or "" when unset
   onChange: (value: string) => void;
   label: string;
+  placeholder?: string; // shown before a time is picked
   // Time to start from when nothing is picked yet.
   suggestion: string;
   align?: "left" | "right";
 };
 
-export default function TimePicker({value, onChange, label, suggestion, align = "left"}: Props) {
+export default function TimePicker({value, onChange, label, placeholder = "Pick a time", suggestion, align = "left"}: Props) {
   const [open, setOpen] = useState(false);
   const [openUp, setOpenUp] = useState(false);
   const root = useRef<HTMLDivElement>(null);
@@ -89,7 +90,8 @@ export default function TimePicker({value, onChange, label, suggestion, align = 
   }, [open]);
 
   return (
-    <div ref={root} className="relative min-w-0 flex-1">
+    // Wide enough for "10:00 AM" even where the form is tight on space.
+    <div ref={root} className="relative min-w-[7rem] flex-1">
       <button
         ref={trigger}
         type="button"
@@ -107,7 +109,7 @@ export default function TimePicker({value, onChange, label, suggestion, align = 
           open ? "border-scene" : "border-white/30 hover:border-white/60"
         }`}
       >
-        <span className={`truncate whitespace-nowrap ${value ? "text-white" : "text-white/45"}`}>{value ? formatTime(value) : "--:-- --"}</span>
+        <span className={`truncate whitespace-nowrap ${value ? "text-white" : "text-white/45"}`}>{value ? formatTime(value) : placeholder}</span>
         <svg viewBox="0 0 16 16" className="h-3.5 w-3.5 shrink-0 text-white/50" fill="none" stroke="currentColor" strokeWidth="1.4">
           <circle cx="8" cy="8" r="6.25" />
           <path d="M8 4.5V8l2.3 1.6" strokeLinecap="round" strokeLinejoin="round" />
