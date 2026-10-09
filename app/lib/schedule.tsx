@@ -51,6 +51,7 @@ type Schedule = {
   completed: string[]; // ids of finished sessions, on any loaded day
   sessionsOn: (day: string) => Session[]; // sorted by start time; empty until that day loads
   isLoaded: (day: string) => boolean;
+  loadedDays: string[]; // every day read so far, in no particular order
   loadDays: (from: string, to: string) => void; // fetch any of these days not already loaded
   error: string | null; // a load or save that failed
   dismissError: () => void;
@@ -231,6 +232,7 @@ export function ScheduleProvider({userId, children}: {userId: string | null; chi
         completed,
         sessionsOn,
         isLoaded: (day) => day in byDay,
+        loadedDays: Object.keys(byDay),
         loadDays,
         error,
         dismissError: () => setError(null),

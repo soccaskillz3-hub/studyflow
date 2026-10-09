@@ -14,7 +14,7 @@ const CALENDAR_PAGES = [
 ];
 
 const tabClass = (active: boolean) =>
-  `-mb-px flex items-center gap-2 border-b-2 pb-3 text-xs uppercase tracking-[0.3em] transition ${
+  `-mb-px flex items-center gap-2 border-b-2 pb-3 text-[11px] uppercase tracking-[0.2em] transition sm:text-xs sm:tracking-[0.3em] ${
     active ? "border-scene text-scene-ink" : "border-transparent text-white/60 hover:text-white"
   }`;
 
@@ -87,11 +87,11 @@ export default function AppHeader() {
   return (
     <>
       <header className="flex items-center justify-between gap-4">
-        <Link href="/" className="text-sm font-semibold tracking-[0.4em] text-white">
+        <Link href="/" className="text-sm font-semibold tracking-[0.3em] text-white sm:tracking-[0.4em]">
           STUDYFLOW
         </Link>
-        <div className="flex items-center gap-5">
-          <p className="whitespace-nowrap text-[11px] uppercase tracking-[0.3em] text-white/75">
+        <div className="flex items-center gap-4 sm:gap-5">
+          <p className="whitespace-nowrap text-[11px] uppercase tracking-[0.2em] text-white/75 sm:tracking-[0.3em]">
             <span className="hidden sm:inline" suppressHydrationWarning>
               {today}
             </span>
@@ -104,11 +104,18 @@ export default function AppHeader() {
         </div>
       </header>
 
-      <nav aria-label="Sections" className="mt-8 flex gap-6 border-b border-white/15 sm:gap-8">
+      <nav aria-label="Sections" className="mt-8 flex gap-5 border-b border-white/15 sm:gap-8">
         <Link href="/" aria-current={pathname === "/" ? "page" : undefined} className={tabClass(pathname === "/")}>
-          Today
+          Dashboard
         </Link>
         <CalendarMenu pathname={pathname} />
+        <Link
+          href="/progress"
+          aria-current={pathname === "/progress" ? "page" : undefined}
+          className={tabClass(pathname === "/progress")}
+        >
+          Progress
+        </Link>
       </nav>
     </>
   );

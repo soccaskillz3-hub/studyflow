@@ -1,4 +1,4 @@
-// Hands a just-finished session from the focus page to the Today dashboard, so the
+// Hands a just-finished session from the focus page to the dashboard, so the
 // dashboard can animate its progress up from where it was. Lives in sessionStorage:
 // it's read once and removed, and never outlives the tab.
 

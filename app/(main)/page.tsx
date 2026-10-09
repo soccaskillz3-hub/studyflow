@@ -4,7 +4,11 @@ import Link from "next/link";
 import {useEffect, useLayoutEffect, useRef, useState} from "react";
 import SectionLabel from "../components/SectionLabel";
 import SessionList from "../components/SessionList";
+import Flame from "../components/Flame";
+import WeekBars from "../components/WeekBars";
 import {takeCelebration, type Celebration} from "../lib/celebrate";
+import {weekStart} from "../lib/days";
+import {streaks, useStudyHistory, useWeek} from "../lib/history";
 import {sessionMinutes, useSchedule} from "../lib/schedule";
 import {formatMinutes, formatTime} from "../lib/time";
 
@@ -107,7 +111,99 @@ function ProgressLine({
 
 const linkClass = "text-scene-soft underline decoration-scene/40 underline-offset-4 transition hover:text-scene-ink";
 
-export default function Today() {
+// The week at a glance: time studied against planned, the streak, and a bar for each day.
+function WeekSummary({
+  today,
+  shownDone,
+  planned,
+  studiedDays,
+  totals,
+  loaded,
+}: {
+  today: string;
+  shownDone: number;
+  planned: number;
+  studiedDays: number;
+  totals: ReturnType<typeof useWeek>["totals"];
+  loaded: boolean;
+}) {
+  const {history} = useStudyHistory();
+  const streak = history && streaks(history, today);
+
+  return (
+    <section className="mt-12">
+      <div className="flex items-center gap-4">
+        <div className="min-w-0 flex-1">
+          <SectionLabel>This week</SectionLabel>
+        </div>
+        <Link href="/progress" className={`text-[11px] uppercase tracking-[0.3em] ${linkClass}`}>
+          All progress
+        </Link>
+      </div>
+
+      <div className="mt-6 flex flex-wrap items-end justify-between gap-x-8 gap-y-6">
+        <div>
+          <div className="flex flex-wrap items-end gap-x-4 gap-y-1">
+            <p className="text-5xl font-semibold leading-none tracking-tight tabular-nums sm:text-6xl">
+              {loaded ? formatMinutes(Math.round(shownDone)) : " "}
+            </p>
+            {loaded && (
+              <p className="pb-1 text-sm text-scene-soft tabular-nums">
+                {planned ? `of ${formatMinutes(planned)} planned` : "studied"}
+              </p>
+            )}
+          </div>
+          <p className="mt-3 text-[11px] uppercase tracking-[0.3em] text-white/65">
+            {!loaded ? (
+              " "
+            ) : planned ? (
+              `Studied on ${studiedDays} of 7 days`
+            ) : (
+              <Link href="/calendar/week" className={linkClass}>
+                Plan your week
+              </Link>
+            )}
+          </p>
+        </div>
+
+        {/* Kept the same size while it loads, so nothing jumps. */}
+        <div className={`flex items-center gap-3 ${streak ? "" : "invisible"}`}>
+          <Flame lit={streak?.studiedToday ?? false} className="h-8 w-8" />
+          <div>
+            <p className="text-3xl font-semibold leading-none tabular-nums">
+              {streak?.current ?? 0}
+              <span className="ml-2 text-sm font-normal text-scene-soft">
+                day streak
+              </span>
+            </p>
+            <p className="mt-2 text-[11px] text-white/60">
+              {!streak
+                ? " "
+                : streak.studiedToday
+                  ? "Today counts. Nice work."
+                  : streak.current
+                    ? "Finish a session today to keep it"
+                    : "Finish a session today to start one"}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-8">
+        <WeekBars totals={totals} today={today} height={56} labels={false} />
+      </div>
+    </section>
+  );
+}
+
+// The dashboard: the week first, then today (progress, what's next, and today's sessions).
+export default function Dashboard() {
+  const {today} = useSchedule();
+  if (!today) return null;
+  return <DashboardView today={today} />;
+}
+
+function DashboardView({today}: {today: string}) {
   const {sessions, completed} = useSchedule();
   // Coming back from a finished focus session: start at the old total, then animate up.
   const [celebration, setCelebration] = useState<Celebration | null>(null);
@@ -137,15 +233,27 @@ export default function Today() {
   const targetDone = resetting ? Math.max(0, doneMinutes - celebration.minutes) : doneMinutes;
   const shownDone = useAnimatedNumber(targetDone, celebration ? 1400 : 700, resetting);
   const percent = plannedMinutes === 0 ? 0 : Math.round((shownDone / plannedMinutes) * 100);
+  const week = useWeek(weekStart(today));
+  const weekTarget = resetting ? Math.max(0, week.done - celebration.minutes) : week.done;
+  const shownWeek = useAnimatedNumber(weekTarget, celebration ? 1400 : 700, resetting);
   const nextSession = studySessions.find((s) => !completed.includes(s.id));
   const doneCount = studySessions.filter((s) => completed.includes(s.id)).length;
 
   return (
     <>
-      <section className="mt-12">
-        <SectionLabel>Today&apos;s progress</SectionLabel>
+      <WeekSummary
+        today={today}
+        shownDone={shownWeek}
+        planned={week.planned}
+        studiedDays={week.studiedDays}
+        totals={week.totals}
+        loaded={week.loaded}
+      />
+
+      <section className="mt-16">
+        <SectionLabel>Today</SectionLabel>
         <div className="mt-6 flex flex-wrap items-end gap-x-5 gap-y-2">
-          <p className="text-6xl font-semibold leading-none tracking-tight tabular-nums sm:text-7xl">
+          <p className="text-4xl font-semibold leading-none tracking-tight tabular-nums sm:text-5xl">
             {formatMinutes(Math.round(shownDone))}
           </p>
           <p className="pb-1.5 text-sm text-scene-soft tabular-nums">of {formatMinutes(plannedMinutes)} planned</p>

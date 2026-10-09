@@ -17,9 +17,10 @@ StudyFlow is a calm daily study planner. Lay out today's sessions, run a full-sc
 
 ### Plan and focus
 
-- **Today** — your progress for the day (study time done out of time planned, breaks excluded), what's next, and today's sessions. Click a session to tick it off.
+- **Dashboard** — the first thing you see when you log in. **This week** up top: study time done out of planned, your streak, and a bar for each day. Then **today**: your progress (breaks excluded), what's next, and today's sessions. Click a session to tick it off.
 - **Calendar** — a **week view** of everything at a glance (classes and study sessions, Monday to Sunday), and an hour-by-hour **day view** with a live "now" line. Step back and forward through weeks and days to plan ahead; click any open time in the day view to add a session there, and overlapping sessions sit side by side. **Schedule** lists today's sessions with an add form.
 - **Classes** — paste your class schedule from your school's portal (Waterloo Quest's list view, other PeopleSoft systems, or plain lines like `CS 135 LEC MWF 10:30-11:20 MC 2065`). StudyFlow finds each course's lectures, tutorials and labs with their days, times, rooms and term dates, lets you untick anything it got wrong, and shows them on the calendar on the days they meet, in their own bold colour that changes with the scene. New accounts are asked whether they'd like to add their classes; it lives in **Settings → Classes** after that.
+- **Progress** — your **streak** (days in a row with a study session done; the flame lights up once today counts), a GitHub-style grid of the **last six months** shaded by how much you got done, and a closer look at any **week**: done against planned for each day, and a breakdown **by subject**.
 - **Focus timer** — press **Start?** on a session for a full-screen countdown of its length. Pause with the button or the space bar, take a break (10, 20, 30 minutes or your own length), add 10 more minutes when time's up, and press **Done** for a little celebration. The timer survives reloads and leaving the page, and the tab title shows the time left.
 - **Custom time picker** — hour, minute and AM/PM columns with keyboard support.
 - **Your own account** — sign up with an email and password. Each day's schedule, what you've finished, and your theme and sound settings are saved to your account, private to you, and follow you between devices. Visitors who aren't logged in see a welcome page.
@@ -133,12 +134,13 @@ supabase/
 └── tests/privacy.sql           # Checks accounts can't reach each other's data
 app/
 ├── (main)/                     # Pages that share the header (login required)
-│   ├── page.tsx                # Today: progress, next up, today's sessions
+│   ├── page.tsx                # Dashboard: this week and streak, then today
 │   ├── calendar/
 │   │   ├── page.tsx            # Day view (any day: ?day=2026-10-14)
 │   │   ├── week/page.tsx       # Week view
 │   │   └── schedule/page.tsx   # Schedule: add form and today's list
-│   └── classes/page.tsx        # Paste a class schedule; your classes
+│   ├── classes/page.tsx        # Paste a class schedule; your classes
+│   └── progress/page.tsx       # Streak, six months of study days, a week by subject
 ├── (auth)/                     # Log in, sign up, forgot and reset password
 ├── auth/confirm/route.ts       # Where links in StudyFlow's emails land
 ├── welcome/page.tsx            # The front page for visitors who aren't logged in
@@ -153,6 +155,8 @@ app/
 │   │   ├── ForestWildlife.tsx  # Animals and when they visit
 │   │   ├── WeatherLayers.tsx   # Rain, lightning, snow and fog (shared)
 │   │   └── forestShapes.ts     # Generated tree, canopy and fern shapes
+│   ├── StudyHeatmap.tsx        # The six-month grid on Progress
+│   ├── WeekBars.tsx            # A bar per day: done against planned
 │   ├── SettingsMenu.tsx        # Theme, Sound, Classes, account
 │   ├── MuteButton.tsx
 │   ├── TimePicker.tsx
@@ -166,6 +170,7 @@ app/
     │   └── sfx.ts              # One-off sounds: animals, thunder, chimes
     ├── schedule.tsx            # Today's sessions and what's done, saved to the account
     ├── settingsSync.tsx        # Saves theme, scene and sound settings to the account
+    ├── history.ts              # Study totals by day, and streaks
     ├── classSchedule.ts        # Reads pasted class schedules
     ├── classes.tsx             # Imported classes and which days they meet
     ├── dayLayout.ts            # Sessions and classes laid out on a timeline
