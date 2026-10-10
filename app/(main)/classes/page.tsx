@@ -1,6 +1,7 @@
 "use client";
 
 import {useState} from "react";
+import DatePicker from "../../components/DatePicker";
 import SectionLabel from "../../components/SectionLabel";
 import {describeDays, parseSchedule, type Meeting, type ParseResult} from "../../lib/classSchedule";
 import {useClasses, type ClassMeeting} from "../../lib/classes";
@@ -14,8 +15,6 @@ MATH 137  LEC  TTh 1:00PM - 2:20PM  RCH 101`;
 const button =
   "border border-scene/70 px-5 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-scene-ink transition hover:bg-scene/15 active:scale-[0.98] disabled:opacity-50";
 const quiet = "text-xs uppercase tracking-[0.25em] text-white/60 transition hover:text-white";
-const dateInput =
-  "border-b border-white/30 bg-transparent px-1 py-1.5 text-sm text-white outline-none transition focus:border-scene [color-scheme:dark]";
 
 function formatDay(day: string) {
   const [y, m, d] = day.split("-").map(Number);
@@ -175,9 +174,9 @@ function Importer() {
                 last day of classes to limit them (optional):
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-white/60">
-                <input type="date" value={termStart} onChange={(e) => setTermStart(e.target.value)} aria-label="First day of classes" className={dateInput} />
+                <DatePicker value={termStart} onChange={setTermStart} label="First day of classes" placeholder="First day" max={termEnd || undefined} />
                 <span>to</span>
-                <input type="date" value={termEnd} onChange={(e) => setTermEnd(e.target.value)} aria-label="Last day of classes" className={dateInput} />
+                <DatePicker value={termEnd} onChange={setTermEnd} label="Last day of classes" placeholder="Last day" min={termStart || undefined} align="right" />
               </div>
             </div>
           )}

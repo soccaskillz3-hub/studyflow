@@ -164,7 +164,7 @@ app/
 │   ├── StartButton.tsx         # Start?: the timer-or-clock choice
 │   ├── SettingsMenu.tsx        # Theme, Sound, Focus, Classes, account
 │   ├── MuteButton.tsx
-│   ├── TimePicker.tsx
+│   ├── TimePicker.tsx, DatePicker.tsx  # In the site's style, not the browser's
 │   └── …                       # Header, session form and list
 └── lib/
     ├── scene.tsx               # Theme, live weather and time of day
