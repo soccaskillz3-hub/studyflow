@@ -3,7 +3,7 @@ import Link from "next/link";
 import {authLink} from "../../components/AuthForm";
 import {SignupForm} from "../forms";
 
-export const metadata: Metadata = {title: "Create an account · StudyFlow"};
+export const metadata: Metadata = {title: "Create an account · Zeflo"};
 
 export default function SignupPage() {
   return (

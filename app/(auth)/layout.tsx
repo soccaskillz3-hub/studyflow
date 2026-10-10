@@ -6,7 +6,7 @@ export default function AuthLayout({children}: {children: React.ReactNode}) {
     <main className="sf-lift flex flex-1 flex-col font-mono text-white">
       <div className="mx-auto flex w-full max-w-sm flex-1 flex-col px-5 pb-24 pt-10 sm:pt-14">
         <Link href="/" className="text-sm font-semibold tracking-[0.4em] text-white">
-          STUDYFLOW
+          ZEFLO
         </Link>
         <div className="mt-16 sm:mt-24">{children}</div>
       </div>

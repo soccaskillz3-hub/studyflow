@@ -4,7 +4,7 @@ import {authLink} from "../../components/AuthForm";
 import DevLogin from "../../components/DevLogin";
 import {LoginForm} from "../forms";
 
-export const metadata: Metadata = {title: "Log in · StudyFlow"};
+export const metadata: Metadata = {title: "Log in · Zeflo"};
 
 const NOTICES: Record<string, string> = {
   // Also where Supabase's default confirmation link lands when it's opened in a different browser
@@ -25,7 +25,7 @@ export default async function LoginPage({searchParams}: PageProps<"/login">) {
         />
       </div>
       <p className="mt-12 text-sm text-white/75">
-        New to StudyFlow?{" "}
+        New to Zeflo?{" "}
         <Link href="/signup" className={authLink}>
           Create an account
         </Link>

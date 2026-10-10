@@ -6,7 +6,7 @@ import {RESET_PENDING_COOKIE} from "../../lib/resetPending";
 import {safeNext} from "../../lib/safeNext";
 import {createClient} from "../../lib/supabase/server";
 
-// Where the links in StudyFlow's emails land (confirming a new account, resetting a password).
+// Where the links in Zeflo's emails land (confirming a new account, resetting a password).
 // A valid link logs the person in and sends them on to `next`.
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;

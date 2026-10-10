@@ -15,7 +15,8 @@ export function useAccount() {
   return useContext(AccountContext);
 }
 
-// Everything StudyFlow keeps in this browser. Cleared when logging out, so the next person to
+// Everything Zeflo keeps in this browser (the keys still say "studyflow", the app's old name:
+// renaming them would reset everyone's saved theme, sound and timer). Cleared when logging out, so the next person to
 // log in here doesn't inherit any of it.
 const LOCAL_KEYS = [
   "studyflow:v1",

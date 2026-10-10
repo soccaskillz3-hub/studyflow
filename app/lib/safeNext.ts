@@ -2,7 +2,7 @@
 // dashboard. Parsing it the way a browser would (against a placeholder origin) catches every way
 // of sneaking in another site: "//evil.example", "/\evil.example", hidden tabs and line breaks,
 // full URLs. Anything that would leave the site becomes "/".
-const BASE = "https://studyflow.invalid";
+const BASE = "https://zeflo.invalid";
 
 export function safeNext(next: string | null | undefined) {
   if (!next) return "/";

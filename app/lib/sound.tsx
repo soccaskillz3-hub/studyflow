@@ -79,7 +79,7 @@ export function SoundProvider({children}: {children: ReactNode}) {
 
   // In development, expose the mixer for poking at from the browser console.
   useEffect(() => {
-    if (process.env.NODE_ENV === "development") Object.assign(window, {__studyflowSound: {audio, soundscape}});
+    if (process.env.NODE_ENV === "development") Object.assign(window, {__zefloSound: {audio, soundscape}});
   }, []);
 
   const update = (change: Partial<SoundSettings>) => setSettings((s) => ({...s, ...change}));

@@ -89,7 +89,7 @@ export default function AppHeader() {
     <>
       <header className="flex items-center justify-between gap-4">
         <Link href="/" className="text-sm font-semibold tracking-[0.3em] text-white sm:tracking-[0.4em]">
-          STUDYFLOW
+          ZEFLO
         </Link>
         <div className="flex items-center gap-4 sm:gap-5">
           {/* The narrowest phones don't have room for the date next to the buttons. */}

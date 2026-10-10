@@ -5,7 +5,7 @@ import {requireUser} from "../../lib/dal";
 import {RESET_PENDING_COOKIE} from "../../lib/resetPending";
 import {ResetPasswordForm} from "../forms";
 
-export const metadata: Metadata = {title: "Choose a new password · StudyFlow"};
+export const metadata: Metadata = {title: "Choose a new password · Zeflo"};
 
 // Reached from the reset email's link, which logs the person in first. Until they save a new
 // password or cancel, the proxy keeps them here.

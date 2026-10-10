@@ -3,7 +3,7 @@ import Link from "next/link";
 import {authLink} from "../../components/AuthForm";
 import {ForgotPasswordForm} from "../forms";
 
-export const metadata: Metadata = {title: "Reset your password · StudyFlow"};
+export const metadata: Metadata = {title: "Reset your password · Zeflo"};
 
 export default function ForgotPasswordPage() {
   return (

@@ -1,8 +1,8 @@
-# StudyFlow
+# Zeflo
 
 **Your study. Your schedule. Your flow.**
 
-StudyFlow is a calm daily study planner. Lay out today's sessions, run a full-screen focus timer for each one, and watch your progress fill in — all floating over a living scene, an ocean or a forest, that follows the real weather and time of day where you are, with sound to match.
+Zeflo is a calm daily study planner. Lay out today's sessions, run a full-screen focus timer for each one, and watch your progress fill in — all floating over a living scene, an ocean or a forest, that follows the real weather and time of day where you are, with sound to match.
 
 <p>
   <img src="docs/screenshots/forest-day.jpg" alt="Today in the forest theme on a clear day, with light falling through the trees" width="49%">
@@ -19,7 +19,7 @@ StudyFlow is a calm daily study planner. Lay out today's sessions, run a full-sc
 
 - **Dashboard** — the first thing you see when you log in. **This week** up top: study time done out of planned, your streak, and a bar for each day. Then **today**: your progress (breaks excluded), today's classes, what's on **now** or **next** (with the time left), and today's sessions, then **countdowns to your next tests and exams**, taken straight from your imported class schedule. Click a session to tick it off.
 - **Calendar** — a **week view** of everything at a glance (classes and study sessions, Monday to Sunday), and an hour-by-hour **day view** with a live "now" line. Step back and forward through weeks and days to plan ahead, with the arrows or by **swiping** (a finger on a phone or iPad, or two fingers on a trackpad); click any open time in the day view to add a session there, or press and drag to draw it at exactly the right length; then type its name right in the block and press Enter. Drag the block to move it, its top and bottom edges to change the times, or click a time to pick it exactly (on phones a panel slides up instead). The × on a session removes it, and overlapping sessions sit side by side. **Schedule** lists today's sessions with an add form.
-- **Classes** — paste your class schedule from your school's portal (Waterloo Quest's list view, other PeopleSoft systems, or plain lines like `CS 135 LEC MWF 10:30-11:20 MC 2065`). StudyFlow finds each course's lectures, tutorials and labs with their days, times, rooms and term dates, lets you untick anything it got wrong, and shows them on the calendar on the days they meet, in their own bold colour that changes with the scene. New accounts are asked whether they'd like to add their classes; it lives in **Settings → Classes** after that.
+- **Classes** — paste your class schedule from your school's portal (Waterloo Quest's list view, other PeopleSoft systems, or plain lines like `CS 135 LEC MWF 10:30-11:20 MC 2065`). Zeflo finds each course's lectures, tutorials and labs with their days, times, rooms and term dates, lets you untick anything it got wrong, and shows them on the calendar on the days they meet, in their own bold colour that changes with the scene. New accounts are asked whether they'd like to add their classes; it lives in **Settings → Classes** after that.
 - **Progress** — your **streak** (days in a row with a study session done; the flame lights up once today counts), a GitHub-style grid of the **last six months** shaded by how much you got done, and a closer look at any **week** (swipe to move between weeks): done against planned for each day, and a breakdown **by course** ("CS 135 assignment" and "CS 135 lab prep" both count for CS 135).
 - **Start? — timer or clock** — pressing **Start?** on a session asks whether you want the study timer or the clock. The first time you choose, it asks once whether to make that your default; either way it never asks again, and you can change it any time in **Settings → Focus**.
 - **Focus timer** — a full-screen countdown of the session's length. Pause with the button or the space bar, take a break (10, 20, 30 minutes or your own length), add 10 more minutes when time's up, and press **Done** for a little celebration. The timer survives reloads and leaving the page, and the tab title shows the time left.
@@ -72,7 +72,7 @@ cd studyflow
 npm install
 ```
 
-StudyFlow stores accounts and schedules in [Supabase](https://supabase.com) (free plan is fine). One-time setup:
+Zeflo stores accounts and schedules in [Supabase](https://supabase.com) (free plan is fine). One-time setup:
 
 1. Create a Supabase project. In **Project Settings → API Keys**, copy the project URL and the **publishable** key into a `.env.local` file in the project folder (it's ignored by git):
 
@@ -98,7 +98,7 @@ After at least two people have signed up, [`supabase/tests/privacy.sql`](supabas
 npm run dev
 ```
 
-Then open [http://localhost:3000](http://localhost:3000). Your browser will ask for your location so the scene can match your weather; if you decline, StudyFlow falls back to a clear sky and your device's clock.
+Then open [http://localhost:3000](http://localhost:3000). Your browser will ask for your location so the scene can match your weather; if you decline, Zeflo falls back to a clear sky and your device's clock.
 
 | Command         | What it does               |
 | --------------- | -------------------------- |
@@ -107,11 +107,11 @@ Then open [http://localhost:3000](http://localhost:3000). Your browser will ask 
 | `npm start`     | Serve the production build |
 | `npm run lint`  | Run ESLint                 |
 
-In development, `window.__studyflowSound` in the browser console exposes the audio mixer for debugging. It's left out of production builds.
+In development, `window.__zefloSound` in the browser console exposes the audio mixer for debugging. It's left out of production builds.
 
 ## How weather and time work
 
-When you allow location access, StudyFlow asks [Open-Meteo](https://open-meteo.com) for the current weather code and today's sunrise and sunset, then refreshes every 30 minutes. Your coordinates are rounded to two decimal places (about 1 km) before being sent, and are never stored.
+When you allow location access, Zeflo asks [Open-Meteo](https://open-meteo.com) for the current weather code and today's sunrise and sunset, then refreshes every 30 minutes. Your coordinates are rounded to two decimal places (about 1 km) before being sent, and are never stored.
 
 - **Weather** comes from Open-Meteo's [WMO weather codes](https://open-meteo.com/en/docs#weather_variable_documentation), grouped into the six scenes.
 - **Time of day**: sunrise runs from 45 minutes before to 75 minutes after sunrise; dusk from an hour before to 45 minutes after sunset; day and night fill the rest. Without location, sunrise and sunset are assumed to be 6:30 AM and 7:00 PM.
@@ -144,7 +144,7 @@ app/
 │   ├── classes/page.tsx        # Paste a class schedule; your classes
 │   └── progress/page.tsx       # Streak, six months of study days, a week by subject
 ├── (auth)/                     # Log in, sign up, forgot and reset password
-├── auth/confirm/route.ts       # Where links in StudyFlow's emails land
+├── auth/confirm/route.ts       # Where links in Zeflo's emails land
 ├── welcome/page.tsx            # The front page for visitors who aren't logged in
 ├── focus/[id]/page.tsx         # Full-screen focus timer
 ├── clock/page.tsx              # Full-screen clock, five styles to swipe between

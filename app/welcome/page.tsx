@@ -16,7 +16,7 @@ export default function WelcomePage() {
     <main className="sf-lift flex flex-1 flex-col font-mono text-white">
       <div className="mx-auto w-full max-w-3xl px-5 pb-32 pt-10 sm:px-8 sm:pt-14">
         <header className="flex items-center justify-between gap-4">
-          <span className="text-sm font-semibold tracking-[0.4em]">STUDYFLOW</span>
+          <span className="text-sm font-semibold tracking-[0.4em]">ZEFLO</span>
           <Link href="/login" className="text-xs uppercase tracking-[0.3em] text-white/75 transition hover:text-white">
             Log in
           </Link>

@@ -37,7 +37,7 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "StudyFlow",
+  title: "Zeflo",
   description: "Plan your study day and track your progress.",
 };
 

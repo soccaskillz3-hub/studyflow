@@ -4,7 +4,7 @@ import type {ReactNode} from "react";
 import {useFormStatus} from "react-dom";
 
 // Building blocks for the account pages (sign up, log in, password reset), styled like the
-// rest of StudyFlow: underlined fields and outlined buttons floating over the scene.
+// rest of Zeflo: underlined fields and outlined buttons floating over the scene.
 
 export function Field({
   label,

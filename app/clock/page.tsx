@@ -174,7 +174,7 @@ export default function ClockPage({searchParams}: PageProps<"/clock">) {
   useEffect(() => {
     if (!now) return;
     const previous = document.title;
-    document.title = `${formatTime(`${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`)} · StudyFlow`;
+    document.title = `${formatTime(`${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`)} · Zeflo`;
     return () => {
       document.title = previous;
     };

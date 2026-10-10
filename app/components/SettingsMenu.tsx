@@ -362,7 +362,7 @@ function LogOutButton() {
   );
 }
 
-// Who's logged in, and the way out. Logging out also clears what StudyFlow kept in this browser.
+// Who's logged in, and the way out. Logging out also clears what Zeflo kept in this browser.
 function AccountFooter() {
   const account = useAccount();
   if (!account) return null;
