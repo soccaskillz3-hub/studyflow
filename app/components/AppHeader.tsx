@@ -5,6 +5,8 @@ import {usePathname} from "next/navigation";
 import {useCallback, useRef, useState} from "react";
 import MuteButton from "./MuteButton";
 import SettingsMenu from "./SettingsMenu";
+import {formatDay} from "../lib/days";
+import {useSchedule} from "../lib/schedule";
 import {useDismiss} from "../lib/useDismiss";
 
 const CALENDAR_PAGES = [
@@ -76,13 +78,12 @@ function CalendarMenu({pathname}: {pathname: string}) {
 
 export default function AppHeader() {
   const pathname = usePathname();
-  const today = new Date().toLocaleDateString(undefined, {
-    weekday: "long",
-    month: "short",
-    day: "numeric",
-  });
+  // The visitor's own day, known only once mounted: the server runs on UTC, which can already be
+  // tomorrow (or still yesterday). It also turns over at midnight while the page is open.
+  const {today: day} = useSchedule();
+  const today = day ? formatDay(day, {weekday: "long", month: "short", day: "numeric"}) : "";
   // Phones don't have room for the full weekday next to the settings button.
-  const todayShort = new Date().toLocaleDateString(undefined, {weekday: "short", month: "short", day: "numeric"});
+  const todayShort = day ? formatDay(day, {weekday: "short", month: "short", day: "numeric"}) : "";
 
   return (
     <>
@@ -93,12 +94,8 @@ export default function AppHeader() {
         <div className="flex items-center gap-4 sm:gap-5">
           {/* The narrowest phones don't have room for the date next to the buttons. */}
           <p className="whitespace-nowrap text-[11px] uppercase tracking-[0.2em] text-white/75 max-[359px]:hidden sm:tracking-[0.3em]">
-            <span className="hidden sm:inline" suppressHydrationWarning>
-              {today}
-            </span>
-            <span className="sm:hidden" suppressHydrationWarning>
-              {todayShort}
-            </span>
+            <span className="hidden sm:inline">{today}</span>
+            <span className="sm:hidden">{todayShort}</span>
           </p>
           <Link
             href="/clock"
