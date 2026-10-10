@@ -86,7 +86,7 @@ export default function AiConnect({opens}: {opens: number}) {
           Plan with the AI you already use
         </h2>
         <p className="mt-3 text-sm leading-relaxed text-white/75">
-          Connect Claude, ChatGPT or another assistant once. Then just tell it what&apos;s coming up, and it plans your study around your classes,
+          Connect Claude or another assistant once. Then just tell it what&apos;s coming up, and it plans your study around your classes,
           right on your Zeflo calendar.
         </p>
 
@@ -112,11 +112,12 @@ export default function AiConnect({opens}: {opens: number}) {
           <Step n={2} title="Add it to your AI app">
             <ul className="mt-1.5 space-y-1 text-[11px] leading-relaxed text-white/60">
               <li>
-                <span className="text-white/85">Claude:</span> Settings → Connectors → Add custom connector.
+                <span className="text-white/85">Claude:</span> Settings → Connectors → Add custom connector. Free plans included.
               </li>
               <li>
-                <span className="text-white/85">ChatGPT:</span> Settings → Apps &amp; Connectors → Create. If you don&apos;t see it, turn on developer mode
-                under Advanced.
+                <span className="text-white/85">ChatGPT:</span>{" "}
+                <span className="rounded border border-white/20 px-1.5 py-px text-[10px] uppercase tracking-[0.15em] text-white/60">In progress</span>{" "}
+                coming soon.
               </li>
             </ul>
           </Step>

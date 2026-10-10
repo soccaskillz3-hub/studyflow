@@ -74,6 +74,13 @@ const db = (ctx: Ctx) => {
   return supabaseFor(token);
 };
 
+// How each tool touches the user's data, spelled out in full for assistants (and app directory
+// review). None reach beyond the user's own account, so none are open-world.
+const READS = {readOnlyHint: true, destructiveHint: false, openWorldHint: false};
+const ADDS = {readOnlyHint: false, destructiveHint: false, openWorldHint: false};
+const CHANGES = {readOnlyHint: false, destructiveHint: true, openWorldHint: false}; // overwrites what was there
+const REMOVES = {readOnlyHint: false, destructiveHint: true, openWorldHint: false};
+
 const overlaps = (aStart: string, aEnd: string, bStart: string, bEnd: string) =>
   toMinutes(aStart) < toMinutes(bEnd) && toMinutes(bStart) < toMinutes(aEnd);
 
@@ -89,7 +96,7 @@ export function registerTools(server: McpServer) {
         to: day,
         today: day.optional().describe("The user's date today, so upcomingTests starts there (defaults to `from`)"),
       }),
-      annotations: {readOnlyHint: true},
+      annotations: READS,
     },
     async ({from, to, today}, ctx) => {
       if (to < from) return fail("`to` must be on or after `from`.");
@@ -142,6 +149,7 @@ export function registerTools(server: McpServer) {
           .min(1)
           .max(MAX_ADD),
       }),
+      annotations: ADDS,
     },
     async ({sessions}, ctx) => {
       const bad = sessions.find((s) => toMinutes(s.end) <= toMinutes(s.start));
@@ -192,6 +200,7 @@ export function registerTools(server: McpServer) {
         isBreak: z.boolean().optional(),
         done: z.boolean().optional(),
       }),
+      annotations: CHANGES,
     },
     async ({id, date, start, end, subject: name, isBreak, done}, ctx) => {
       const supabase = db(ctx);
@@ -220,7 +229,7 @@ export function registerTools(server: McpServer) {
       title: "Remove study sessions",
       description: "Delete study sessions by id. Confirm with the user first. Classes can't be removed here.",
       inputSchema: z.object({ids: z.array(z.string().uuid()).min(1).max(MAX_ADD)}),
-      annotations: {destructiveHint: true},
+      annotations: REMOVES,
     },
     async ({ids}, ctx) => {
       const {data, error} = await db(ctx).from("study_sessions").delete().in("id", ids).select("id");
@@ -236,7 +245,7 @@ export function registerTools(server: McpServer) {
       description:
         "The user's study streak and totals: minutes planned and done per day for the 30 days up to `today`, and the current streak (days in a row with at least one finished session, counting from today or yesterday).",
       inputSchema: z.object({today: day}),
-      annotations: {readOnlyHint: true},
+      annotations: READS,
     },
     async ({today}, ctx) => {
       const from = addDays(today, -365);

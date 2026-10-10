@@ -4,8 +4,9 @@ import {updateSession} from "./app/lib/supabase/proxy";
 
 // Pages for people who aren't logged in. Logged-in visitors are sent on to the app instead.
 const GUEST_PAGES = ["/welcome", "/login", "/signup", "/forgot-password"];
-// Open to everyone: email links land here whether or not the visitor is logged in.
-const OPEN_PAGES = ["/auth/confirm"];
+// Open to everyone: email links land here whether or not the visitor is logged in, and the
+// privacy policy, terms and support pages are for anyone.
+const OPEN_PAGES = ["/auth/confirm", "/privacy", "/terms", "/support"];
 // For AI assistants, not browsers: the connector checks its own OAuth token, and the metadata
 // tells assistants where to sign in. No login cookies involved, so they skip all of the below.
 const MACHINE_PATHS = ["/api/mcp", "/.well-known"];

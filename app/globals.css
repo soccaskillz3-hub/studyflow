@@ -120,6 +120,18 @@ body {
     0 0 18px rgba(2, 8, 22, 0.45);
 }
 
+/* The privacy policy, terms and support pages: long-form text, set for reading. */
+.sf-legal h1 { font-size: 1.875rem; font-weight: 600; line-height: 1.2; letter-spacing: -0.02em; }
+.sf-legal h2 { margin-top: 2.5rem; font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.3em; color: var(--color-scene-ink); }
+.sf-legal p,
+.sf-legal ul { margin-top: 0.875rem; font-size: 0.875rem; line-height: 1.75; color: rgb(255 255 255 / 0.82); }
+.sf-legal ul { list-style: disc; padding-left: 1.25rem; }
+.sf-legal li + li { margin-top: 0.375rem; }
+.sf-legal strong { font-weight: 600; color: white; }
+.sf-legal a { text-decoration: underline; text-decoration-color: rgb(255 255 255 / 0.35); text-underline-offset: 4px; }
+.sf-legal a:hover { text-decoration-color: white; }
+.sf-legal .sf-legal-meta { margin-top: 0.75rem; font-size: 0.75rem; color: rgb(255 255 255 / 0.55); }
+
 /* Time picker columns: no scrollbar, and items fade out at the top and bottom edges. */
 .sf-picker-col {
   scrollbar-width: none;

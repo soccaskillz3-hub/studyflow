@@ -52,8 +52,8 @@ export default function WelcomePage() {
           <div className="mt-8 rounded-2xl border border-scene/30 bg-scene/[0.07] p-5 sm:p-6">
             <p className="text-xs uppercase tracking-[0.3em] text-scene-ink">✦ Your own AI, built in</p>
             <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/85">
-              Connect Claude, ChatGPT or another assistant, and just ask it to plan your week. It works around your classes and tests, puts study
-              sessions straight on your calendar, and learns how you study the more you use it.
+              Connect Claude or another assistant, and just ask it to plan your week. It works around your classes and tests, puts study sessions
+              straight on your calendar, and learns how you study the more you use it. ChatGPT is coming soon.
             </p>
           </div>
           <ul className="mt-10 grid gap-8 sm:grid-cols-3">
@@ -65,6 +65,17 @@ export default function WelcomePage() {
             ))}
           </ul>
           <p className="mt-12 text-xs text-white/60">Your schedule and progress are private to your account.</p>
+          <nav className="mt-4 flex gap-5 text-[11px] uppercase tracking-[0.25em] text-white/55">
+            <Link href="/privacy" className="transition hover:text-white">
+              Privacy
+            </Link>
+            <Link href="/terms" className="transition hover:text-white">
+              Terms
+            </Link>
+            <Link href="/support" className="transition hover:text-white">
+              Support
+            </Link>
+          </nav>
         </section>
       </div>
     </main>
