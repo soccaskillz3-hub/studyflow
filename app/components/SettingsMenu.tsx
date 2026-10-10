@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import {useCallback, useRef, useState, type CSSProperties, type KeyboardEvent} from "react";
+import {useCallback, useEffect, useRef, useState, type CSSProperties, type KeyboardEvent} from "react";
+import type {OAuthGrant} from "@supabase/supabase-js";
 import {useFormStatus} from "react-dom";
 import {forgetThisBrowser, useAccount} from "../lib/account";
 import {logOut} from "../lib/auth";
@@ -10,6 +11,7 @@ import {formatDay} from "../lib/days";
 import {CLOCK_STYLES, START_MODES, usePrefs, type StartMode} from "../lib/prefs";
 import {useScene, type SceneStatus} from "../lib/scene";
 import {useSound} from "../lib/sound";
+import {createClient} from "../lib/supabase/client";
 import {THEMES, type Theme} from "../lib/themes";
 import {useDismiss} from "../lib/useDismiss";
 import {TIMES, WEATHERS, type TimeOfDay, type Weather} from "../lib/weather";
@@ -39,6 +41,7 @@ const TABS = [
   {id: "sound", label: "Sound"},
   {id: "focus", label: "Focus"},
   {id: "classes", label: "Classes"},
+  {id: "ai", label: "AI"},
 ] as const;
 type Tab = (typeof TABS)[number]["id"];
 
@@ -362,6 +365,105 @@ function LogOutButton() {
   );
 }
 
+const EXAMPLE_PROMPT = "Look at my Zeflo schedule and plan study sessions for my next test, around my classes.";
+
+// Connecting the user's own AI assistant (Claude, ChatGPT, ...) to Zeflo through the connector at
+// /api/mcp, and the assistants already connected, each with a way to disconnect it.
+function AiTab() {
+  const [grants, setGrants] = useState<OAuthGrant[] | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
+  const [address, setAddress] = useState("");
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- the site's own address, known once mounted
+    setAddress(`${window.location.origin}/api/mcp`);
+    createClient()
+      .auth.oauth.listGrants()
+      .then(({data}) => setGrants(data ?? []));
+  }, []);
+
+  const copy = (text: string) =>
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(text);
+      setTimeout(() => setCopied((c) => (c === text ? null : c)), 1500);
+    });
+
+  const disconnect = async (clientId: string) => {
+    const {error} = await createClient().auth.oauth.revokeGrant({clientId});
+    if (!error) setGrants((g) => g?.filter((x) => x.client.id !== clientId) ?? null);
+  };
+
+  const copyButton = (text: string, label: string) => (
+    <button
+      type="button"
+      onClick={() => copy(text)}
+      className="shrink-0 rounded-md bg-white/[0.06] px-2.5 py-1.5 text-[11px] uppercase tracking-[0.15em] text-white/80 transition hover:bg-white/[0.12] hover:text-white"
+    >
+      {copied === text ? "Copied" : label}
+    </button>
+  );
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <p className="text-xs uppercase tracking-[0.25em] text-white">Your AI</p>
+        <p className="mt-1 text-xs leading-relaxed text-white/55">
+          Connect Claude, ChatGPT or another assistant once, then just ask it to plan your week. It sees your classes and tests and puts sessions
+          straight on your calendar.
+        </p>
+      </div>
+
+      <div>
+        <p className="text-[11px] uppercase tracking-[0.2em] text-white/70">Connector address</p>
+        <div className="mt-1.5 flex items-center gap-2">
+          <code className="min-w-0 flex-1 truncate rounded-md bg-black/25 px-2.5 py-1.5 text-[11px] text-white/85">{address}</code>
+          {address && copyButton(address, "Copy")}
+        </div>
+        <ul className="mt-2 space-y-1 text-[11px] leading-relaxed text-white/55">
+          <li>
+            <span className="text-white/80">Claude:</span> Settings → Connectors → Add custom connector, then paste it.
+          </li>
+          <li>
+            <span className="text-white/80">ChatGPT:</span> Settings → Apps &amp; Connectors → add a custom connector (may need developer mode).
+          </li>
+          <li>Then sign in to Zeflo when it asks, and choose Allow.</li>
+        </ul>
+      </div>
+
+      <div>
+        <p className="text-[11px] uppercase tracking-[0.2em] text-white/70">Try asking</p>
+        <div className="mt-1.5 flex items-start gap-2">
+          <p className="min-w-0 flex-1 text-xs italic leading-relaxed text-white/80">“{EXAMPLE_PROMPT}”</p>
+          {copyButton(EXAMPLE_PROMPT, "Copy")}
+        </div>
+      </div>
+
+      {grants && grants.length > 0 && (
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.2em] text-white/70">Connected</p>
+          <ul className="mt-1.5 space-y-1.5">
+            {grants.map((g) => (
+              <li key={g.client.id} className="flex items-center justify-between gap-2 text-xs text-white/85">
+                <span className="min-w-0 truncate">
+                  {g.client.name || "An app"}
+                  <span className="text-white/45"> · since {formatDay(g.granted_at.slice(0, 10), {month: "short", day: "numeric"})}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => disconnect(g.client.id)}
+                  className="shrink-0 text-[11px] uppercase tracking-[0.15em] text-white/55 underline decoration-white/25 underline-offset-4 transition hover:text-rose-200"
+                >
+                  Disconnect
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Who's logged in, and the way out. Logging out also clears what Zeflo kept in this browser.
 function AccountFooter() {
   const account = useAccount();
@@ -446,6 +548,7 @@ export default function SettingsMenu() {
             {tab === "sound" && <SoundTab />}
             {tab === "focus" && <FocusTab onNavigate={close} />}
             {tab === "classes" && <ClassesTab onNavigate={close} />}
+            {tab === "ai" && <AiTab />}
           </div>
 
           <AccountFooter />

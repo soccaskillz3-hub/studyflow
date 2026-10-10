@@ -2,40 +2,11 @@
 
 import {createContext, useContext, useEffect, useState, type ReactNode} from "react";
 import type {Meeting} from "./classSchedule";
-import {toDate} from "./days";
+import {CLASS_COLUMNS, classFromRow, type ClassMeeting, type ClassRow} from "./classMeetings";
 import {usePrefs} from "./prefs";
 import {createClient} from "./supabase/client";
-import {toMinutes} from "./time";
 
-export type ClassMeeting = Meeting & {id: string};
-
-type Row = {
-  id: string;
-  code: string;
-  title: string;
-  component: string;
-  days: number[];
-  starts_at: string; // "HH:MM:SS"
-  ends_at: string;
-  location: string;
-  starts_on: string | null;
-  ends_on: string | null;
-};
-
-const COLUMNS = "id, code, title, component, days, starts_at, ends_at, location, starts_on, ends_on";
-
-const fromRow = (r: Row): ClassMeeting => ({
-  id: r.id,
-  code: r.code,
-  title: r.title,
-  component: r.component,
-  days: r.days,
-  start: r.starts_at.slice(0, 5),
-  end: r.ends_at.slice(0, 5),
-  location: r.location,
-  startsOn: r.starts_on,
-  endsOn: r.ends_on,
-});
+export {classesOn, upcomingTests, type ClassMeeting} from "./classMeetings";
 
 // The same course, component and times: importing a schedule twice shouldn't add it twice.
 const sameMeeting = (a: Meeting, b: Meeting) =>
@@ -46,25 +17,6 @@ const sameMeeting = (a: Meeting, b: Meeting) =>
   a.end === b.end &&
   a.startsOn === b.startsOn &&
   a.endsOn === b.endsOn;
-
-// Tests, exams and other one-off meetings (they start and end on the same day) from today on,
-// soonest first. Today's stay in the list until they've finished.
-export function upcomingTests(classes: ClassMeeting[], today: string, nowMinutes: number) {
-  return classes
-    .filter((c) => c.startsOn !== null && c.startsOn === c.endsOn)
-    .filter((c) => c.startsOn! > today || (c.startsOn === today && toMinutes(c.end) > nowMinutes))
-    .sort((a, b) => (a.startsOn === b.startsOn ? toMinutes(a.start) - toMinutes(b.start) : a.startsOn! < b.startsOn! ? -1 : 1));
-}
-
-// Classes that meet on a date ("YYYY-MM-DD", the user's local day), sorted by start time.
-export function classesOn(classes: ClassMeeting[], day: string) {
-  const weekday = toDate(day).getDay();
-  return classes
-    .filter(
-      (c) => c.days.includes(weekday) && (!c.startsOn || c.startsOn <= day) && (!c.endsOn || day <= c.endsOn),
-    )
-    .sort((a, b) => toMinutes(a.start) - toMinutes(b.start));
-}
 
 type Classes = {
   classes: ClassMeeting[];
@@ -90,11 +42,11 @@ export function ClassesProvider({userId, children}: {userId: string | null; chil
     let current = true;
     createClient()
       .from("class_meetings")
-      .select(COLUMNS)
+      .select(CLASS_COLUMNS)
       .eq("user_id", userId)
       .then(({data, error}) => {
         if (!current || error) return; // no classes table yet, or offline: the calendar just shows sessions
-        setClasses((data as Row[]).map(fromRow));
+        setClasses((data as ClassRow[]).map(classFromRow));
         setLoaded(true);
       });
     return () => {
@@ -125,9 +77,9 @@ export function ClassesProvider({userId, children}: {userId: string | null; chil
           ends_on: m.endsOn,
         })),
       )
-      .select(COLUMNS);
+      .select(CLASS_COLUMNS);
     if (error) throw error;
-    setClasses((prev) => [...prev, ...(data as Row[]).map(fromRow)]);
+    setClasses((prev) => [...prev, ...(data as ClassRow[]).map(classFromRow)]);
     return fresh.length;
   };
 

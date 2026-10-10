@@ -66,6 +66,11 @@ export function SceneProvider({children}: {children: ReactNode}) {
     setWeatherOverride(readOverride(WEATHER_OVERRIDE_KEY, WEATHERS));
     setTimeOverride(readOverride(TIME_OVERRIDE_KEY, TIMES));
     const id = setInterval(() => setNow(new Date()), 60 * 1000);
+    // In development, window.__zefloScene switches the scene from the console (for testing
+    // transitions without the menu). It isn't saved. Left out of production builds.
+    if (process.env.NODE_ENV === "development") {
+      Object.assign(window, {__zefloScene: {time: setTimeOverride, weather: setWeatherOverride, theme: setTheme}});
+    }
     return () => clearInterval(id);
   }, []);
 

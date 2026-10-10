@@ -6,6 +6,9 @@ import {updateSession} from "./app/lib/supabase/proxy";
 const GUEST_PAGES = ["/welcome", "/login", "/signup", "/forgot-password"];
 // Open to everyone: email links land here whether or not the visitor is logged in.
 const OPEN_PAGES = ["/auth/confirm"];
+// For AI assistants, not browsers: the connector checks its own OAuth token, and the metadata
+// tells assistants where to sign in. No login cookies involved, so they skip all of the below.
+const MACHINE_PATHS = ["/api/mcp", "/.well-known"];
 
 const matches = (path: string, pages: string[]) => pages.some((p) => path === p || path.startsWith(`${p}/`));
 
@@ -14,8 +17,10 @@ const matches = (path: string, pages: string[]) => pages.some((p) => path === p 
 // login pages. This is only a quick first check: every page and query also checks the login
 // (see app/lib/dal.ts and the database's row level security).
 export async function proxy(request: NextRequest) {
-  const {response, signedIn, carry} = await updateSession(request);
   const {pathname, search} = request.nextUrl;
+  if (matches(pathname, MACHINE_PATHS)) return NextResponse.next();
+
+  const {response, signedIn, carry} = await updateSession(request);
 
   if (matches(pathname, OPEN_PAGES)) return response;
 

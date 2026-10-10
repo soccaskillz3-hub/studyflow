@@ -133,6 +133,25 @@ export function ScheduleProvider({userId, children}: {userId: string | null; chi
     if (today) loadDays(today, today);
   }, [today, loadDays]);
 
+  // Read the loaded days again when someone comes back to the tab, so sessions added elsewhere
+  // (a connected AI assistant, another device) show up. At most every 15 seconds.
+  useEffect(() => {
+    let last = Date.now();
+    const refresh = () => {
+      if (document.visibilityState !== "visible" || Date.now() - last < 15_000) return;
+      last = Date.now();
+      const days = [...requested.current].sort();
+      requested.current.clear();
+      if (days.length) loadDays(days[0], days[days.length - 1]);
+    };
+    document.addEventListener("visibilitychange", refresh);
+    window.addEventListener("focus", refresh);
+    return () => {
+      document.removeEventListener("visibilitychange", refresh);
+      window.removeEventListener("focus", refresh);
+    };
+  }, [loadDays]);
+
   useEffect(() => {
     if (!userId) return;
     try {

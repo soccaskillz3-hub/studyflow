@@ -366,18 +366,22 @@ body {
 }
 
 /* ---------- Clock ----------
-   Full-screen like the focus timer, but lighter: just a vignette, so more of the scene shows. */
+   Full-screen over the scene as it is, with no tint: the time itself carries a soft shadow and
+   glow so it reads over any sky, bright day included. */
 
 .sf-clock {
-  background: radial-gradient(ellipse 75% 60% at 50% 48%, transparent 0%, rgba(4, 8, 20, 0.5) 100%),
-    linear-gradient(rgba(4, 8, 20, 0.22), rgba(4, 8, 20, 0.22));
+  text-shadow: 0 1px 12px rgba(2, 6, 18, 0.45);
 }
 .sf-clock-glow {
-  color: #f8fafc;
-  text-shadow: 0 0 40px color-mix(in srgb, var(--accent-glow) 60%, transparent), 0 0 120px color-mix(in srgb, var(--accent-glow) 45%, transparent);
+  color: #ffffff;
+  text-shadow:
+    0 2px 6px rgba(2, 6, 18, 0.35),
+    0 6px 40px rgba(2, 6, 18, 0.45),
+    0 0 50px color-mix(in srgb, var(--accent-glow) 70%, transparent),
+    0 0 140px color-mix(in srgb, var(--accent-glow) 50%, transparent);
 }
 .sf-clock-colon { animation: sf-colon 2s ease-in-out infinite; }
-.sf-clock-dial { filter: drop-shadow(0 0 30px rgba(0, 0, 0, 0.35)); }
+.sf-clock-dial { filter: drop-shadow(0 4px 30px rgba(2, 6, 18, 0.5)) drop-shadow(0 0 40px color-mix(in srgb, var(--accent-glow) 35%, transparent)); }
 .sf-clock-hand { filter: drop-shadow(0 0 4px color-mix(in srgb, var(--accent-glow) 70%, transparent)); }
 .sf-clock-second {
   transform-box: view-box;
@@ -936,13 +940,14 @@ body {
 @property --mist { syntax: "<color>"; inherits: true; initial-value: transparent; }
 @property --animal { syntax: "<color>"; inherits: true; initial-value: #050a12; }
 @property --owl { syntax: "<color>"; inherits: true; initial-value: #3a3442; }
+@property --snow-cap { syntax: "<color>"; inherits: true; initial-value: #9aa7bd; }
 
 .sf-forest {
   --mote: rgba(255, 246, 214, 0.9);
   --firefly: #f4ff9a;
   --firefly-glow: rgba(214, 255, 110, 0.75);
   transition-property: --tree-1, --tree-2, --tree-3, --tree-4, --ground-top, --ground-bottom, --ray, --glow, --haze-f,
-    --veil-f, --mist, --animal, --owl, --scrim;
+    --veil-f, --mist, --animal, --owl, --scrim, --snow-cap;
   transition-duration: 1800ms;
   transition-timing-function: ease-in-out;
 }
