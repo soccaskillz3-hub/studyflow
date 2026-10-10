@@ -33,6 +33,17 @@ function useNow() {
   return now;
 }
 
+// While the clock is open, the scene behind it draws in (see :root[data-immersive] in globals.css).
+function useImmersive() {
+  useEffect(() => {
+    const html = document.documentElement;
+    html.dataset.immersive = "";
+    return () => {
+      delete html.dataset.immersive;
+    };
+  }, []);
+}
+
 function usePrefersSmoothMotion() {
   const [smooth, setSmooth] = useState(true);
   useEffect(() => {
@@ -131,6 +142,7 @@ export default function ClockPage({searchParams}: PageProps<"/clock">) {
   const smooth = usePrefersSmoothMotion();
   const idle = useIdle();
   useWakeLock();
+  useImmersive();
   const {prefs, setPrefs} = usePrefs();
   const {sessions, completed, toggle} = useSchedule();
   const session = typeof sessionId === "string" ? sessions.find((s) => s.id === sessionId) : undefined;
@@ -236,7 +248,7 @@ export default function ClockPage({searchParams}: PageProps<"/clock">) {
         idle && !drag ? "cursor-none" : ""
       } ${leaving ? "opacity-0" : ""}`}
     >
-      <header className={`relative z-10 flex items-center justify-between gap-4 px-5 pt-6 sm:px-10 sm:pt-8 ${fade}`}>
+      <header className={`sf-clock-enter-late relative z-10 flex items-center justify-between gap-4 px-5 pt-6 sm:px-10 sm:pt-8 ${fade}`}>
         <Link href="/" className="flex items-center gap-2 text-[11px] uppercase tracking-[0.3em] text-white/70 transition hover:text-white">
           <span aria-hidden>←</span> Dashboard
         </Link>
@@ -253,7 +265,7 @@ export default function ClockPage({searchParams}: PageProps<"/clock">) {
 
       <main
         ref={stage}
-        className="relative flex-1 touch-pan-y select-none overflow-clip"
+        className="sf-clock-enter relative flex-1 touch-pan-y select-none overflow-clip"
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
@@ -279,7 +291,8 @@ export default function ClockPage({searchParams}: PageProps<"/clock">) {
               {/* Only the styles in view (or next to it, mid-swipe) are drawn. */}
               {Math.abs(i - index) <= 1 && (
                 <div className={`transition-[opacity,transform] duration-700 ${i === index ? "scale-100 opacity-100" : "scale-[0.92] opacity-30"}`}>
-                  <Face style={s.id} now={now} smooth={smooth} />
+                  {/* Keyed by motion: the sweeping hands start in step with the time when they appear. */}
+                  <Face key={String(smooth)} style={s.id} now={now} smooth={smooth} />
                 </div>
               )}
             </section>
@@ -306,7 +319,7 @@ export default function ClockPage({searchParams}: PageProps<"/clock">) {
         </button>
       </main>
 
-      <footer className="relative z-10 flex flex-col items-center gap-5 px-5 pb-8 sm:pb-12">
+      <footer className="sf-clock-enter-late relative z-10 flex flex-col items-center gap-5 px-5 pb-8 sm:pb-12">
         {session && (
           <div className="flex w-[min(26rem,100%)] items-center gap-4 rounded-full border border-white/15 bg-slate-950/35 py-2 pl-5 pr-2 backdrop-blur-sm">
             <div className="min-w-0 flex-1">

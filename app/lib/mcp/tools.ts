@@ -14,7 +14,7 @@ import {toMinutes} from "../time";
 
 export const INSTRUCTIONS = `Zeflo is a calm study planner for students. It holds the user's class timetable (imported from their school, read-only here), their tests and exams, and the study sessions they plan around them, which they tick off as they finish.
 
-Dates are the user's own calendar days ("YYYY-MM-DD") and times are their local 24-hour clock ("HH:MM"). Zeflo doesn't know the user's time zone, so use today's date as the user knows it.
+Dates are the user's own calendar days ("YYYY-MM-DD") and times are their local 24-hour clock ("HH:MM"). Zeflo doesn't know the user's time zone, so use today's date as the user knows it, and pass it as \`today\` to get_schedule.
 
 When planning study time: call get_schedule first, avoid the user's classes and existing sessions, keep sessions between 25 and 120 minutes with short breaks between long stretches, and spread work for a test over the days before it rather than cramming. Name sessions after the course and the task, e.g. "MATH 135 · practice midterm". Briefly confirm the plan with the user before adding many sessions, and always before removing any.`;
 
@@ -83,11 +83,15 @@ export function registerTools(server: McpServer) {
     {
       title: "Get schedule",
       description:
-        "The user's classes and study sessions for each day from `from` to `to` (inclusive, at most two months), plus their upcoming tests and exams. Call this before planning.",
-      inputSchema: z.object({from: day, to: day}),
+        "The user's classes and study sessions for each day from `from` to `to` (inclusive, at most two months), plus their tests and exams from `today` on. Call this before planning.",
+      inputSchema: z.object({
+        from: day,
+        to: day,
+        today: day.optional().describe("The user's date today, so upcomingTests starts there (defaults to `from`)"),
+      }),
       annotations: {readOnlyHint: true},
     },
-    async ({from, to}, ctx) => {
+    async ({from, to, today}, ctx) => {
       if (to < from) return fail("`to` must be on or after `from`.");
       const days = daysBetween(from, to);
       if (days.length > MAX_DAYS) return fail(`Ask for at most ${MAX_DAYS} days at a time.`);
@@ -115,7 +119,7 @@ export function registerTools(server: McpServer) {
           })),
           sessions: rows.filter((s) => s.date === d).map((s) => ({id: s.id, subject: s.subject, start: s.start, end: s.end, isBreak: s.isBreak, done: s.done})),
         })),
-        upcomingTests: upcomingTests(meetings, from, 0).map((t) => ({
+        upcomingTests: upcomingTests(meetings, today ?? from, 0).map((t) => ({
           course: t.code,
           title: t.title || t.component || "Test",
           date: t.startsOn,
@@ -162,10 +166,11 @@ export function registerTools(server: McpServer) {
       if (error) return fail("Couldn't add those sessions. Nothing was added.");
 
       const added = (data as SessionRow[]).map(session);
-      const warnings = added.flatMap((s) => {
+      const warnings = added.flatMap((s, i) => {
         const clash = [
           ...classesOn(meetings, s.date).filter((c) => overlaps(s.start, s.end, c.start, c.end)).map((c) => `${c.code} ${c.component}`.trim()),
-          ...others.filter((o) => o.date === s.date && overlaps(s.start, s.end, o.start, o.end)).map((o) => o.subject),
+          // Sessions already there, and the ones added before it in this same batch.
+          ...[...others, ...added.slice(0, i)].filter((o) => o.date === s.date && overlaps(s.start, s.end, o.start, o.end)).map((o) => o.subject),
         ];
         return clash.length ? [`"${s.subject}" on ${s.date} overlaps ${clash.join(", ")}`] : [];
       });

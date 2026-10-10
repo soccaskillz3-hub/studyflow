@@ -24,6 +24,10 @@ const TOUCH_MAX_MS = 800; // ...within this long, so a slow drag that's really a
 const EDGE_PX = 24; // touches starting this close to the screen edge are the browser's back/forward gesture
 const WHEEL_MIN_PX = 90; // how far a trackpad swipe must scroll sideways
 const WHEEL_QUIET_MS = 220; // a pause this long ends one trackpad gesture (and its momentum)
+const NEW_SWIPE_AFTER_MS = 250; // after a swipe, how soon a fresh one can start without a pause
+const NEW_SWIPE_JUMP = 1.8; // ...told apart from momentum (which only slows) by speeding up this much
+const NEW_SWIPE_MIN_PX = 8; // ...to at least this much per event
+const NEW_SWIPE_SLOWING = 3; // ...after this many events in a row each smaller than the last
 const FOLLOW = 0.35; // with `follow`, how much the area moves with the gesture
 const MAX_FOLLOW_PX = 70;
 const ARRIVE_PX = 36; // ...and how far away the next thing starts before sliding in
@@ -32,7 +36,15 @@ const ARRIVE_TIMEOUT_MS = 2000; // if it hasn't arrived by then, slide back anyw
 // Shared by every swipe area, because a swipe can replace the area itself (the day view is
 // rebuilt for each day): the trackpad gesture still in progress, whose momentum mustn't count
 // as a second swipe on the new area, and a swipe whose next thing hasn't slid in yet.
-const wheel = {travelled: 0, fired: false, quiet: undefined as ReturnType<typeof setTimeout> | undefined};
+const wheel = {
+  travelled: 0,
+  fired: false,
+  firedAt: 0,
+  last: 0, // the previous event's sideways distance, to tell momentum from a fresh swipe
+  slowing: 0, // how many events in a row have been smaller than the one before
+  settling: false, // ...and whether that's happened enough since the swipe: momentum dying down
+  quiet: undefined as ReturnType<typeof setTimeout> | undefined,
+};
 let arrival: {direction: 1 | -1; at: number} | null = null;
 
 // The trackpad handler of the swipe area on screen now (the latest one set up).
@@ -179,14 +191,38 @@ export function useSwipe(area: RefObject<HTMLElement | null>, options: Options) 
       wheel.quiet = setTimeout(() => {
         wheel.travelled = 0;
         wheel.fired = false;
+        wheel.last = 0;
+        wheel.slowing = 0;
+        wheel.settling = false;
         if (!arriving.current) move(0);
       }, WHEEL_QUIET_MS);
+
+      // A trackpad keeps sending ever-smaller sideways events after a swipe (momentum), so the
+      // gesture rarely pauses long enough to end on its own when swiping again straight away.
+      // A fresh swipe shows up as a sudden jump in speed after the momentum has been dying down
+      // (fingers still dragging don't slow steadily like that): start over.
+      const size = Math.abs(e.deltaX);
+      wheel.slowing = size < wheel.last ? wheel.slowing + 1 : size > wheel.last ? 0 : wheel.slowing;
+      if (wheel.fired && wheel.slowing >= NEW_SWIPE_SLOWING) wheel.settling = true;
+      const fresh =
+        wheel.settling &&
+        performance.now() - wheel.firedAt > NEW_SWIPE_AFTER_MS &&
+        size >= NEW_SWIPE_MIN_PX &&
+        size > wheel.last * NEW_SWIPE_JUMP;
+      wheel.last = size;
+      if (fresh) {
+        wheel.fired = false;
+        wheel.travelled = 0;
+        wheel.slowing = 0;
+        wheel.settling = false;
+      }
       if (wheel.fired) return;
 
       wheel.travelled += e.deltaX;
       move(-wheel.travelled);
       if (Math.abs(wheel.travelled) > WHEEL_MIN_PX) {
         wheel.fired = true;
+        wheel.firedAt = performance.now();
         latest.current.onMove?.(0);
         swipe(wheel.travelled > 0 ? 1 : -1);
       }

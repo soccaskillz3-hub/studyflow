@@ -372,6 +372,22 @@ body {
 .sf-clock {
   text-shadow: 0 1px 12px rgba(2, 6, 18, 0.45);
 }
+/* Arriving in clock mode: the time sharpens out of a soft blur, then the controls follow. */
+.sf-clock-enter {
+  animation: sf-clock-enter 1.1s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.sf-clock-enter-late {
+  /* backwards, not both: once in, the idle fade (an opacity transition) takes over again. */
+  animation: sf-fade-in 900ms ease 450ms backwards;
+}
+@keyframes sf-clock-enter {
+  from { opacity: 0; transform: scale(0.97); filter: blur(10px); }
+  to   { opacity: 1; transform: none; filter: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sf-clock-enter { animation: sf-fade-in 600ms ease backwards; }
+}
+
 .sf-clock-glow {
   color: #ffffff;
   text-shadow:
@@ -870,14 +886,30 @@ body {
 
 .sf-backdrop {
   --snow-depth: 0;
-  transition: opacity 700ms, --fog 1800ms ease-in-out, --snow-depth 25s ease-in;
+  transition: opacity 700ms, --fog 1800ms ease-in-out, --snow-depth 25s ease-in, filter 1.8s ease, transform 2.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .sf-backdrop[data-weather="snow"] {
   --snow-depth: 1;
-  transition: opacity 700ms, --fog 1800ms ease-in-out, --snow-depth 150s cubic-bezier(0.3, 0, 0.6, 1);
+  transition: opacity 700ms, --fog 1800ms ease-in-out, --snow-depth 150s cubic-bezier(0.3, 0, 0.6, 1), filter 1.8s ease, transform 2.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .sf-backdrop.sf-instant {
-  transition: opacity 700ms;
+  transition: opacity 700ms, filter 1.8s ease, transform 2.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Clock mode draws you in: the scene eases a little closer, with a touch more contrast and colour,
+   and its edges deepen, so the time and the view are all there is. Eases back on leaving. */
+:root[data-immersive] .sf-backdrop {
+  filter: contrast(1.12) saturate(1.1);
+  transform: scale(1.045);
+}
+.sf-vignette {
+  transition: box-shadow 1.8s ease;
+}
+:root[data-immersive] .sf-vignette {
+  box-shadow: inset 0 0 240px 60px rgba(2, 5, 14, 0.42);
+}
+@media (prefers-reduced-motion: reduce) {
+  :root[data-immersive] .sf-backdrop { transform: none; }
 }
 .sf-backdrop[data-time="sunrise"] { --fog: rgba(232, 208, 204, 0.24); }
 .sf-backdrop[data-time="day"]     { --fog: rgba(228, 234, 242, 0.32); }

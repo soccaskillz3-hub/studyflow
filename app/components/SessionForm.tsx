@@ -77,63 +77,51 @@ export default function SessionForm({
   const inputClass =
     "border-b border-white/30 bg-transparent px-1 py-2 text-white placeholder:text-white/45 outline-none transition focus:border-scene [color-scheme:dark]";
 
-  const subjectField = (
-    <input
-      ref={subjectInput}
-      type="text"
-      value={subject}
-      onChange={(e) => setSubject(e.target.value)}
-      placeholder={isBreak ? "Break" : "Subject, e.g. CS 135"}
-      aria-label="Subject"
-      className={`${inputClass} md:min-w-0 md:flex-1`}
-    />
-  );
-
-  const timeFields = (
-    <div className="flex items-end gap-3">
-      <TimePicker value={start} onChange={setStart} label="Start time" placeholder="Start" suggestion={startSuggestion} />
-      <span className="pb-2 text-xs text-white/50">to</span>
-      <TimePicker value={end} onChange={setEnd} label="End time" placeholder="End" suggestion={endSuggestion} align="right" />
-    </div>
-  );
-
-  const actions = (
-    <div className="flex items-center justify-between gap-4">
-      <label className="flex cursor-pointer items-center gap-2 text-xs uppercase tracking-[0.2em] text-white/70">
-        <input
-          type="checkbox"
-          checked={isBreak}
-          onChange={(e) => setIsBreak(e.target.checked)}
-          className="h-3.5 w-3.5 accent-scene"
-        />
-        Break
-      </label>
-      <div className="flex items-center gap-2">
-        {onCancel && (
-          <button
-            type="button"
-            onClick={onCancel}
-            className="px-3 py-2 text-xs uppercase tracking-[0.25em] text-white/60 transition hover:text-white"
-          >
-            Cancel
-          </button>
-        )}
-        <button
-          type="submit"
-          className="border border-scene/70 px-5 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-scene-ink transition hover:bg-scene/15 active:scale-[0.98]"
-        >
-          Add
-        </button>
-      </div>
-    </div>
-  );
-
   return (
     <form onSubmit={submit}>
       <div className="flex flex-col gap-4 md:flex-row md:items-end">
-        {subjectField}
-        {timeFields}
-        {actions}
+        <input
+          ref={subjectInput}
+          type="text"
+          value={subject}
+          onChange={(e) => setSubject(e.target.value)}
+          placeholder={isBreak ? "Break" : "Subject, e.g. CS 135"}
+          aria-label="Subject"
+          className={`${inputClass} md:min-w-0 md:flex-1`}
+        />
+        <div className="flex items-end gap-3">
+          <TimePicker value={start} onChange={setStart} label="Start time" placeholder="Start" suggestion={startSuggestion} />
+          <span className="pb-2 text-xs text-white/50">to</span>
+          <TimePicker value={end} onChange={setEnd} label="End time" placeholder="End" suggestion={endSuggestion} align="right" />
+        </div>
+        <div className="flex items-center justify-between gap-4">
+          <label className="flex cursor-pointer items-center gap-2 text-xs uppercase tracking-[0.2em] text-white/70">
+            <input
+              type="checkbox"
+              checked={isBreak}
+              onChange={(e) => setIsBreak(e.target.checked)}
+              className="h-3.5 w-3.5 accent-scene"
+            />
+            Break
+          </label>
+          <div className="flex items-center gap-2">
+            {onCancel && (
+              <button
+                type="button"
+                onClick={onCancel}
+                className="px-3 py-2 text-xs uppercase tracking-[0.25em] text-white/60 transition hover:text-white"
+              >
+                Cancel
+              </button>
+            )}
+            <button
+              type="submit"
+              className="border border-scene/70 px-5 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-scene-ink transition hover:bg-scene/15 active:scale-[0.98]"
+            >
+              Add
+            </button>
+          </div>
+        </div>
       </div>
       {error && <p className="mt-3 text-sm text-rose-300">{error}</p>}
     </form>

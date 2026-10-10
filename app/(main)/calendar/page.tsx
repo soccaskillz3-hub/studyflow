@@ -98,13 +98,24 @@ function BlockComposer({
     onClose();
   };
 
+  // Picking a time never leaves the session ending before it starts (the block would vanish, name
+  // and all): a new start moves the whole session, keeping its length, and an end before the
+  // start moves the start back by the same length.
   const minutes = toMinutes(end) - toMinutes(start);
+  const pickStart = (value: string) => {
+    const from = Math.min(toMinutes(value), LATEST_END - SNAP);
+    onTimesChange(fromMinutes(from), fromMinutes(Math.min(from + minutes, LATEST_END)));
+  };
+  const pickEnd = (value: string) => {
+    const to = Math.max(toMinutes(value), SNAP);
+    onTimesChange(to > toMinutes(start) ? start : fromMinutes(Math.max(to - minutes, 0)), fromMinutes(to));
+  };
   const times = (
     // Not clipped (no truncate) here, or the time pickers' dropdowns would be cut off.
     <span className="flex min-w-0 items-baseline whitespace-nowrap text-[11px] text-scene-soft/90">
-      <TimePicker inline value={start} onChange={(v) => onTimesChange(v, end)} label="Start time" suggestion={start} />
+      <TimePicker inline value={start} onChange={pickStart} label="Start time" suggestion={start} />
       <span>&nbsp;–&nbsp;</span>
-      <TimePicker inline value={end} onChange={(v) => onTimesChange(start, v)} label="End time" suggestion={end} />
+      <TimePicker inline value={end} onChange={pickEnd} label="End time" suggestion={end} />
       <span className="tabular-nums">&nbsp;· {formatMinutes(minutes)}</span>
       {overlaps.length > 0 && <span className="min-w-0 truncate text-amber-200">&nbsp;· overlaps {overlaps.join(", ")}</span>}
     </span>

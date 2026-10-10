@@ -48,7 +48,15 @@ export default function WelcomePage() {
 
         <section className="mt-24">
           <SectionLabel>What you get</SectionLabel>
-          <ul className="mt-8 grid gap-8 sm:grid-cols-3">
+          {/* What sets Zeflo apart, so it comes first. */}
+          <div className="mt-8 rounded-2xl border border-scene/30 bg-scene/[0.07] p-5 sm:p-6">
+            <p className="text-xs uppercase tracking-[0.3em] text-scene-ink">✦ Your own AI, built in</p>
+            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/85">
+              Connect Claude, ChatGPT or another assistant, and just ask it to plan your week. It works around your classes and tests, puts study
+              sessions straight on your calendar, and learns how you study the more you use it.
+            </p>
+          </div>
+          <ul className="mt-10 grid gap-8 sm:grid-cols-3">
             {FEATURES.map((f) => (
               <li key={f.title}>
                 <p className="text-xs uppercase tracking-[0.3em] text-scene-ink">{f.title}</p>

@@ -1,7 +1,7 @@
 "use client";
 
 import {createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode} from "react";
-import {daysBetween, dayKey} from "./days";
+import {addDays, daysBetween, dayKey} from "./days";
 import {createClient} from "./supabase/client";
 import {toMinutes} from "./time";
 
@@ -77,6 +77,37 @@ export function ScheduleProvider({userId, children}: {userId: string | null; chi
   const [legacy, setLegacy] = useState<Legacy | null>(null);
   // Days already fetched or being fetched, so asking twice doesn't fetch twice.
   const requested = useRef(new Set<string>());
+  // Changes made here (counted, and how many are still saving), so a background re-read that
+  // started before a change can't overwrite it with what the account held a moment earlier.
+  const edits = useRef(0);
+  const saving = useRef(0);
+
+  // Read a run of days from the account and show them in place of what was there.
+  const read = useCallback(
+    (days: string[]) =>
+      createClient()
+        .from("study_sessions")
+        .select(COLUMNS)
+        .eq("user_id", userId!)
+        .gte("day", days[0])
+        .lte("day", days[days.length - 1])
+        .order("starts_at")
+        .then(({data, error}) => {
+          if (error) return false;
+          const rows = data as Row[];
+          const fetched: Record<string, Session[]> = Object.fromEntries(days.map((d) => [d, []]));
+          rows.forEach((r) => fetched[r.day]?.push(fromRow(r)));
+          const ids = new Set(rows.map((r) => r.id));
+          return () => {
+            setByDay((prev) => ({...prev, ...fetched}));
+            setCompleted((prev) => [
+              ...prev.filter((id) => !ids.has(id)),
+              ...rows.filter((r) => r.completed_at).map((r) => r.id),
+            ]);
+          };
+        }),
+    [userId],
+  );
 
   const loadDays = useCallback(
     (from: string, to: string) => {
@@ -84,34 +115,13 @@ export function ScheduleProvider({userId, children}: {userId: string | null; chi
       const missing = daysBetween(from, to).filter((d) => !requested.current.has(d));
       if (!missing.length) return;
       missing.forEach((d) => requested.current.add(d));
-      const first = missing[0];
-      const last = missing[missing.length - 1];
-
-      createClient()
-        .from("study_sessions")
-        .select(COLUMNS)
-        .eq("user_id", userId)
-        .gte("day", first)
-        .lte("day", last)
-        .order("starts_at")
-        .then(({data, error}) => {
-          if (error) {
-            missing.forEach((d) => requested.current.delete(d));
-            setError("Couldn't load your schedule. Check your connection and reload the page.");
-            return;
-          }
-          const rows = data as Row[];
-          const fetched: Record<string, Session[]> = Object.fromEntries(missing.map((d) => [d, []]));
-          rows.forEach((r) => fetched[r.day]?.push(fromRow(r)));
-          const ids = new Set(rows.map((r) => r.id));
-          setByDay((prev) => ({...prev, ...fetched}));
-          setCompleted((prev) => [
-            ...prev.filter((id) => !ids.has(id)),
-            ...rows.filter((r) => r.completed_at).map((r) => r.id),
-          ]);
-        });
+      read(missing).then((show) => {
+        if (show) return show();
+        missing.forEach((d) => requested.current.delete(d));
+        setError("Couldn't load your schedule. Check your connection and reload the page.");
+      });
     },
-    [userId],
+    [userId, read],
   );
 
   // Throw away everything loaded and read it again, e.g. after a save failed.
@@ -134,15 +144,27 @@ export function ScheduleProvider({userId, children}: {userId: string | null; chi
   }, [today, loadDays]);
 
   // Read the loaded days again when someone comes back to the tab, so sessions added elsewhere
-  // (a connected AI assistant, another device) show up. At most every 15 seconds.
+  // (a connected AI assistant, another device) show up. At most every 15 seconds, only the days
+  // already shown (each run of consecutive days in one read), and never over a change made here
+  // meanwhile: one still saving skips the refresh, and one made during it discards the result.
   useEffect(() => {
+    if (!userId) return;
     let last = Date.now();
     const refresh = () => {
-      if (document.visibilityState !== "visible" || Date.now() - last < 15_000) return;
+      if (document.visibilityState !== "visible" || Date.now() - last < 15_000 || saving.current) return;
       last = Date.now();
-      const days = [...requested.current].sort();
-      requested.current.clear();
-      if (days.length) loadDays(days[0], days[days.length - 1]);
+      const at = edits.current;
+      const runs: string[][] = [];
+      for (const d of [...requested.current].sort()) {
+        const run = runs[runs.length - 1];
+        if (run && addDays(run[run.length - 1], 1) === d) run.push(d);
+        else runs.push([d]);
+      }
+      runs.forEach((run) =>
+        read(run).then((show) => {
+          if (show && edits.current === at) show();
+        }),
+      );
     };
     document.addEventListener("visibilitychange", refresh);
     window.addEventListener("focus", refresh);
@@ -150,7 +172,7 @@ export function ScheduleProvider({userId, children}: {userId: string | null; chi
       document.removeEventListener("visibilitychange", refresh);
       window.removeEventListener("focus", refresh);
     };
-  }, [loadDays]);
+  }, [userId, read]);
 
   useEffect(() => {
     if (!userId) return;
@@ -166,6 +188,21 @@ export function ScheduleProvider({userId, children}: {userId: string | null; chi
   const failed = (message: string) => {
     setError(message);
     reload();
+  };
+
+  // Count a change made here while it saves (see `edits` above); on failure, say so and re-read.
+  const saved = (message: string) => {
+    edits.current++;
+    saving.current++;
+    const done = ({error}: {error: unknown}) => {
+      saving.current--;
+      if (error) failed(message);
+    };
+    const lost = () => {
+      saving.current--;
+      failed(message);
+    };
+    return [done, lost] as const;
   };
 
   const sessionsOn = (day: string) => byDay[day] ?? NONE;
@@ -186,7 +223,7 @@ export function ScheduleProvider({userId, children}: {userId: string | null; chi
         ends_at: session.end,
         is_break: session.isBreak,
       })
-      .then(({error}) => error && failed("Couldn't save that session. Please try again."));
+      .then(...saved("Couldn't save that session. Please try again."));
   };
 
   const removeSession = (id: string) => {
@@ -197,7 +234,7 @@ export function ScheduleProvider({userId, children}: {userId: string | null; chi
       .from("study_sessions")
       .delete()
       .eq("id", id)
-      .then(({error}) => error && failed("Couldn't remove that session. Please try again."));
+      .then(...saved("Couldn't remove that session. Please try again."));
   };
 
   // Complete on first click, undo on second.
@@ -208,7 +245,7 @@ export function ScheduleProvider({userId, children}: {userId: string | null; chi
       .from("study_sessions")
       .update({completed_at: done ? new Date().toISOString() : null})
       .eq("id", id)
-      .then(({error}) => error && failed("Couldn't save that change. Please try again."));
+      .then(...saved("Couldn't save that change. Please try again."));
   };
 
   const forgetLegacy = () => {
