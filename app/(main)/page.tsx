@@ -13,7 +13,7 @@ import {COMPONENTS} from "../lib/classSchedule";
 import {formatDay, toDate, weekStart} from "../lib/days";
 import {streaks, useStudyHistory, useWeek} from "../lib/history";
 import {sessionMinutes, useSchedule} from "../lib/schedule";
-import {formatMinutes, formatShortTime, formatTime, nowMinutes, toMinutes} from "../lib/time";
+import {formatMinutes, formatTime, nowMinutes, toMinutes} from "../lib/time";
 
 // Hour ticks along the progress line: every hour, or every two for long days.
 function hourTicks(planned: number) {
@@ -226,7 +226,7 @@ function ClassesToday({today, clock}: {today: string; clock: number}) {
         <span key={c.id} className={`flex items-center gap-2 ${toMinutes(c.end) <= clock ? "text-white/40" : "text-white/85"}`}>
           <span className="sf-class-block h-2.5 w-2.5 shrink-0 rounded-[2px] border border-l-[3px]" aria-hidden />
           {c.code} {c.component}
-          <span className="text-white/50 tabular-nums">{formatShortTime(c.start)}</span>
+          <span className="text-white/50 tabular-nums">{formatTime(c.start)}</span>
         </span>
       ))}
     </div>
@@ -373,7 +373,7 @@ function DashboardView({today}: {today: string}) {
           </p>
           <ClassesToday today={today} clock={clock} />
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link href="/calendar/schedule" className={primaryButton}>
+            <Link href="/calendar" className={primaryButton}>
               Add a session
             </Link>
             <Link href="/clock" className={secondaryButton}>
@@ -429,7 +429,7 @@ function DashboardView({today}: {today: string}) {
               ) : (
                 <>
                   <p className="text-3xl font-semibold tracking-tight text-white/85">Nothing planned</p>
-                  <Link href="/calendar/schedule" className={`text-sm ${linkClass}`}>
+                  <Link href="/calendar" className={`text-sm ${linkClass}`}>
                     Plan your day
                   </Link>
                 </>
@@ -444,7 +444,7 @@ function DashboardView({today}: {today: string}) {
                 empty={
                   <>
                     Nothing scheduled yet.{" "}
-                    <Link href="/calendar/schedule" className={linkClass}>
+                    <Link href="/calendar" className={linkClass}>
                       Add sessions
                     </Link>
                   </>

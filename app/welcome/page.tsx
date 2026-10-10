@@ -7,7 +7,7 @@ import SectionLabel from "../components/SectionLabel";
 
 const FEATURES = [
   {title: "Plan", text: "Paste your class schedule, then fit study sessions around it, day by day or week by week."},
-  {title: "Focus", text: "Press Start for a full-screen study timer with breaks, or just a calm clock over the scene."},
+  {title: "Focus", text: "Press Start? for a full-screen study timer with breaks, or just a calm clock over the scene."},
   {title: "Track", text: "Keep a streak going, and see your week, your courses and months of studying at a glance."},
 ];
 
