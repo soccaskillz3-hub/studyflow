@@ -1,4 +1,4 @@
-# Zeflo
+# Zeflo (previously known as StudyFlow)
 
 **Your study. Your schedule. Your flow.**
 
