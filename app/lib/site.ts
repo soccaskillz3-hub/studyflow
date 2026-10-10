@@ -1,8 +1,8 @@
 // How to reach whoever runs Zeflo, shown on the privacy, terms and support pages.
 
-// TODO: the Zeflo support address, once it's set up. Until then, people get in touch through
-// the project's GitHub page.
-export const SUPPORT_EMAIL: string | null = null;
+// Also the address Zeflo's emails are sent from (Supabase's SMTP settings). Without one, people
+// get in touch through the project's GitHub page instead.
+export const SUPPORT_EMAIL: string | null = "zeflo.help@gmail.com";
 
 export const CONTACT = SUPPORT_EMAIL
   ? {href: `mailto:${SUPPORT_EMAIL}`, label: SUPPORT_EMAIL}

@@ -111,14 +111,7 @@ Zeflo stores accounts and schedules in [Supabase](https://supabase.com) (free pl
 
 2. In the **SQL Editor**, run each file in [`supabase/migrations`](supabase/migrations) in order. They create the tables and the row level security rules that keep each account's data private.
 3. In **Authentication → URL Configuration**, set the Site URL to where the app runs (`http://localhost:3000` locally) and add `http://localhost:3000/**` to the Redirect URLs, plus your deployed address once you have one.
-4. Optional, and only possible once you've set up custom SMTP in Supabase: so that email links work on any device, in **Authentication → Emails**, change the links in the **Confirm signup** and **Reset password** templates to:
-
-   ```
-   {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=/
-   {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/reset-password
-   ```
-
-   (With Supabase's default templates, links only work in the browser that asked for them.)
+4. Email, before anyone else signs up: Supabase's built-in email only sends a few messages an hour. In **Authentication → Emails → SMTP Settings**, turn on custom SMTP with any provider (Zeflo uses a Gmail account with an [app password](https://myaccount.google.com/apppasswords): host `smtp.gmail.com`, port `465`). Then, under **Templates**, paste [`supabase/templates/confirm-signup.html`](supabase/templates/confirm-signup.html) into **Confirm signup** and [`reset-password.html`](supabase/templates/reset-password.html) into **Reset password**. Their links work on any device, unlike Supabase's defaults, which only work in the browser that asked for the email. Finally, turn **Confirm email** on (Authentication → Sign In / Providers → Email).
 
 5. Optional, for the AI connector: in **Authentication → OAuth Server**, turn on the OAuth 2.1 server, set the **Authorization Path** to `/oauth/consent`, and allow **dynamic client registration** (assistants like Claude register themselves). The connector lives at `/api/mcp`.
 
