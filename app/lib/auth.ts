@@ -24,6 +24,12 @@ async function siteUrl() {
 }
 
 function describe(error: AuthError) {
+  // The email provider turned the email down (e.g. Supabase's SMTP settings are wrong). Logged,
+  // so it shows up in the hosting logs.
+  if (/error sending/i.test(error.message)) {
+    console.error("Auth email failed:", error.message);
+    return "We couldn't send the email just now. Please try again in a few minutes.";
+  }
   switch (error.code) {
     case "invalid_credentials":
       return "That email and password don't match an account.";
