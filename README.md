@@ -2,7 +2,9 @@
 
 **Your study. Your schedule. Your flow.**
 
-Zeflo is a calm daily study planner. Lay out today's sessions, run a full-screen focus timer for each one, and watch your progress fill in — all floating over a living scene, an ocean or a forest, that follows the real weather and time of day where you are, with sound to match.
+Zeflo is a calm study planner for students. Bring in your class timetable, plan study sessions around it (or ask your own AI to plan them for you), run a full-screen focus timer or clock for each one, and watch your streak and progress fill in — all floating over a living scene, an ocean or a forest, that follows the real weather and time of day where you are, with sound to match.
+
+**Live at [zeflo.vercel.app](https://zeflo.vercel.app)** · version 1.2.0
 
 <p>
   <img src="docs/screenshots/forest-day.jpg" alt="Today in the forest theme on a clear day, with light falling through the trees" width="49%">
@@ -23,14 +25,39 @@ Zeflo is a calm daily study planner. Lay out today's sessions, run a full-screen
 - **Progress** — your **streak** (days in a row with a study session done; the flame lights up once today counts), a GitHub-style grid of the **last six months** shaded by how much you got done, and a closer look at any **week** (swipe to move between weeks): done against planned for each day, and a breakdown **by course** ("CS 135 assignment" and "CS 135 lab prep" both count for CS 135).
 - **Start? — timer or clock** — pressing **Start?** on a session asks whether you want the study timer or the clock. The first time you choose, it asks once whether to make that your default; either way it never asks again, and you can change it any time in **Settings → Focus**.
 - **Focus timer** — a full-screen countdown of the session's length. Pause with the button or the space bar, take a break (10, 20, 30 minutes or your own length), add 10 more minutes when time's up, and press **Done** for a little celebration. The timer survives reloads and leaving the page, and the tab title shows the time left.
-- **Clock** — a full-screen clock over the scene, for when you just want the time and the view (the clock button in the header, or from Start?). Swipe (a finger, or two fingers on a trackpad), drag, use the arrow keys or the dots to choose a style: **Classic** big numbers, an **Analog** dial with a sweeping second hand, the time in **Words** ("just after twenty-five past two"), **Orbit** rings for hours, minutes and seconds, or a **Sun path** showing where the sun or moon is in its arc. Your style is saved to your account. The controls fade away when you're not moving the mouse, it can go full screen, and it keeps the screen awake. Opened from a session, it shows that session (with a progress line that moves smoothly) and a **Done** button.
-- **Your AI, connected** — connect Claude (free plans included) or another assistant to Zeflo once (**Settings → Your AI** has the address and steps; ChatGPT is in progress), then just ask it to plan your week. It reads your classes, tests, sessions and streak, and adds, moves or ticks off study sessions right on your calendar, which updates when you come back to the tab. You approve each assistant on a Zeflo page that says exactly what it can do, and can disconnect it from Settings → Your AI. Connected assistants can read but never change your classes or settings: the database itself enforces that.
-- **Custom time picker** — hour, minute and AM/PM columns with keyboard support.
-- **Your own account** — sign up with an email and password. Each day's schedule, what you've finished, and your theme and sound settings are saved to your account, private to you, and follow you between devices. Visitors who aren't logged in see a welcome page.
+- **Clock** — a full-screen clock over the scene, for when you just want the time and the view (the clock button in the header, or from Start?). Swipe (a finger, or two fingers on a trackpad), drag, use the arrow keys or the dots to choose a style: **Classic** big numbers, an **Analog** dial with a sweeping second hand, the time in **Words** ("just after twenty-five past two"), **Orbit** rings for hours, minutes and seconds, or a **Sun path** showing where the sun or moon is in its arc. Your style is saved to your account, and Classic can show the seconds as numbers instead of a line (the small toggle under it). Opening the clock draws the scene in around you — deeper colour and contrast, a gentle zoom and a soft vignette — and the time sharpens into view. The controls fade away when you're not moving the mouse, it can go full screen, and it keeps the screen awake. Opened from a session, it shows that session (with a progress line that moves smoothly) and a **Done** button.
+- **Time and date pickers** in the site's own style — hour, minute and AM/PM columns for times, and a month calendar for term dates, both with full keyboard support.
+- **Your own account** — sign up with an email and password. Your classes, each day's schedule, what you've finished, and your theme, sound and clock settings are saved to your account, private to you, and follow you between devices. Visitors who aren't logged in see a welcome page, and the [privacy policy](https://zeflo.vercel.app/privacy), [terms](https://zeflo.vercel.app/terms) and [support](https://zeflo.vercel.app/support) pages are open to everyone.
 
 <p>
-  <img src="docs/screenshots/calendar.jpg" alt="The calendar's day view with the current session highlighted" width="49%">
-  <img src="docs/screenshots/settings.jpg" alt="Settings, with the theme cards and the weather and time of day dropdown" width="49%">
+  <img src="docs/screenshots/dashboard.jpg" alt="The dashboard at dusk in the forest: study time this week, a six-day streak and a bar for each day" width="49%">
+  <img src="docs/screenshots/week.jpg" alt="The calendar's week view, with classes and study sessions side by side" width="49%">
+</p>
+<p>
+  <img src="docs/screenshots/calendar.jpg" alt="The day view, with a new session being named right inside its block" width="49%">
+  <img src="docs/screenshots/progress.jpg" alt="Progress: this week's study time by day and by course" width="49%">
+</p>
+<p>
+  <img src="docs/screenshots/clock.jpg" alt="The Classic clock over the ocean at night, with the seconds shown as numbers" width="49%">
+  <img src="docs/screenshots/clock-analog.jpg" alt="The Analog clock in the forest at sunrise" width="49%">
+</p>
+
+### Your AI, connected
+
+Zeflo works with the AI you already use. Connect Claude (free plans included) or another assistant that supports custom connectors once, then just talk to it:
+
+- *"Plan study sessions for my next test, around my classes."*
+- *"I'm free tomorrow afternoon. What should I study, and when?"*
+- *"Look at what I finished this week and plan next week better."*
+
+It reads your classes, upcoming tests, study sessions and streak, then adds, moves or ticks off sessions right on your Zeflo calendar, spreading work for a test over the days before it and warning you about clashes. Because it's your own AI, it learns how you study and plans better the more you use it.
+
+- **Set up in a minute** — **Settings → Your AI** has the connector address, the steps for your assistant, and prompts to try.
+- **You stay in charge** — you approve each assistant on a Zeflo page that spells out what it can and can't do, and disconnect it any time from the same place. Assistants can read but never change your classes or settings: the database itself enforces that.
+- **ChatGPT** is in progress.
+
+<p align="center">
+  <img src="docs/screenshots/ai.jpg" alt="The Your AI window: what it does, the connector address and the steps to connect" width="70%">
 </p>
 
 ### Themes
@@ -68,8 +95,8 @@ Everything cross-fades as it changes, and motion is reduced or turned off if you
 Requires [Node.js](https://nodejs.org) 20.9 or newer.
 
 ```bash
-git clone https://github.com/soccaskillz3-hub/studyflow.git
-cd studyflow
+git clone https://github.com/soccaskillz3-hub/zeflo.git
+cd zeflo
 npm install
 ```
 
@@ -129,6 +156,7 @@ Open-Meteo's free API is for non-commercial use, which suits a personal project 
 - [Geist](https://vercel.com/font), [Jost](https://fonts.google.com/specimen/Jost) and [Fraunces](https://fonts.google.com/specimen/Fraunces)
 - [Supabase](https://supabase.com) for accounts and the Postgres database, with row level security
 - [Open-Meteo](https://open-meteo.com) for weather, sunrise and sunset
+- The [Model Context Protocol](https://modelcontextprotocol.io) ([mcp-handler](https://github.com/vercel/mcp-handler)) and Supabase's OAuth 2.1 server for the AI connector
 
 ## Project structure
 
@@ -151,6 +179,8 @@ app/
 ├── api/mcp/route.ts            # The AI connector (MCP server); tools in lib/mcp/tools.ts
 ├── (auth)/oauth/consent/       # Where people allow an AI assistant to connect
 ├── welcome/page.tsx            # The front page for visitors who aren't logged in
+├── (legal)/                    # Privacy policy, terms and support (open to everyone)
+├── icon.svg                    # The Zeflo icon (browser tab; apple-icon.png for home screens)
 ├── focus/[id]/page.tsx         # Full-screen focus timer
 ├── clock/page.tsx              # Full-screen clock, five styles to swipe between
 ├── layout.tsx                  # Fonts, metadata and the app-wide providers
@@ -168,6 +198,7 @@ app/
 │   ├── clock/faces.tsx         # The clock styles
 │   ├── StartButton.tsx         # Start?: the timer-or-clock choice
 │   ├── SettingsMenu.tsx        # Theme, Sound, Focus, Classes, account
+│   ├── AiConnect.tsx           # The Your AI window: connect, prompts, disconnect
 │   ├── MuteButton.tsx
 │   ├── TimePicker.tsx, DatePicker.tsx  # In the site's style, not the browser's
 │   └── …                       # Header, session form and list
@@ -184,6 +215,9 @@ app/
     ├── history.ts              # Study totals by day, and streaks
     ├── classSchedule.ts        # Reads pasted class schedules
     ├── classes.tsx             # Imported classes and which days they meet
+    ├── classMeetings.ts        # Class rows, tests and which days classes meet (server-safe)
+    ├── mcp/tools.ts            # What a connected AI can do: read the schedule, plan sessions
+    ├── site.ts                 # Support contact and policy dates
     ├── dayLayout.ts            # Sessions and classes laid out on a timeline
     ├── days.ts                 # "YYYY-MM-DD" day helpers in local time
     ├── account.tsx             # The logged-in user, for client components
