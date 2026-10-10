@@ -8,8 +8,9 @@ import StartButton from "../components/StartButton";
 import Flame from "../components/Flame";
 import WeekBars from "../components/WeekBars";
 import {takeCelebration, type Celebration} from "../lib/celebrate";
-import {classesOn, useClasses} from "../lib/classes";
-import {weekStart} from "../lib/days";
+import {classesOn, upcomingTests, useClasses} from "../lib/classes";
+import {COMPONENTS} from "../lib/classSchedule";
+import {formatDay, toDate, weekStart} from "../lib/days";
 import {streaks, useStudyHistory, useWeek} from "../lib/history";
 import {sessionMinutes, useSchedule} from "../lib/schedule";
 import {formatMinutes, formatShortTime, formatTime, nowMinutes, toMinutes} from "../lib/time";
@@ -232,6 +233,55 @@ function ClassesToday({today, clock}: {today: string; clock: number}) {
   );
 }
 
+const TESTS_SHOWN = 3;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// Countdowns to the next tests and exams, straight from the imported class schedule: nothing to
+// type in. Within a week, the count takes the scene's accent.
+function UpcomingTests({today, clock}: {today: string; clock: number}) {
+  const {classes} = useClasses();
+  const tests = upcomingTests(classes, today, clock).slice(0, TESTS_SHOWN);
+  if (!tests.length) return null;
+
+  return (
+    <section className="mt-16">
+      <SectionLabel>Upcoming tests</SectionLabel>
+      <ul className="mt-6 space-y-5">
+        {tests.map((t) => {
+          const days = Math.round((toDate(t.startsOn!).getTime() - toDate(today).getTime()) / DAY_MS);
+          const soon = days <= 7;
+          return (
+            <li key={t.id} className="flex items-center gap-5">
+              <p className={`w-24 shrink-0 tabular-nums ${soon ? "text-scene-ink" : "text-white/85"}`}>
+                {days === 0 ? (
+                  <span className="text-2xl font-semibold">Today</span>
+                ) : days === 1 ? (
+                  <span className="text-2xl font-semibold">Tomorrow</span>
+                ) : (
+                  <>
+                    <span className="text-3xl font-semibold leading-none">{days}</span>
+                    <span className="ml-1.5 text-xs text-white/55">days</span>
+                  </>
+                )}
+              </p>
+              <div className="min-w-0">
+                <p className="truncate">
+                  <span className="font-semibold text-class-ink">{t.code}</span>{" "}
+                  <span className="text-white/85">{(COMPONENTS[t.component] ?? t.component) || "Test"}</span>
+                </p>
+                <p className="mt-0.5 truncate text-xs text-white/55 tabular-nums">
+                  {formatDay(t.startsOn!, {weekday: "short", month: "short", day: "numeric"})} · {formatTime(t.start)}
+                  {t.location && t.location !== "TBA" && ` · ${t.location}`}
+                </p>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
 // The time of day in minutes, kept current.
 function useClock() {
   const [clock, setClock] = useState(nowMinutes);
@@ -411,6 +461,8 @@ function DashboardView({today}: {today: string}) {
           </section>
         </>
       )}
+
+      <UpcomingTests today={today} clock={clock} />
     </>
   );
 }

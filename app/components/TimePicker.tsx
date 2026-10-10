@@ -50,9 +50,10 @@ type Props = {
   // Time to start from when nothing is picked yet.
   suggestion: string;
   align?: "left" | "right";
+  inline?: boolean; // just the time as text, e.g. inside a calendar block
 };
 
-export default function TimePicker({value, onChange, label, placeholder = "Pick a time", suggestion, align = "left"}: Props) {
+export default function TimePicker({value, onChange, label, placeholder = "Pick a time", suggestion, align = "left", inline = false}: Props) {
   const [open, setOpen] = useState(false);
   const [openUp, setOpenUp] = useState(false);
   const root = useRef<HTMLDivElement>(null);
@@ -91,7 +92,7 @@ export default function TimePicker({value, onChange, label, placeholder = "Pick 
 
   return (
     // Wide enough for "10:00 AM" even where the form is tight on space.
-    <div ref={root} className="relative min-w-[7rem] flex-1">
+    <div ref={root} className={inline ? "relative inline-block" : "relative min-w-[7rem] flex-1"}>
       <button
         ref={trigger}
         type="button"
@@ -105,15 +106,27 @@ export default function TimePicker({value, onChange, label, placeholder = "Pick 
           if (rect) setOpenUp(window.innerHeight - rect.bottom < 300 && rect.top > 300);
           setOpen((o) => !o);
         }}
-        className={`flex w-full items-center justify-between gap-2 border-b px-1 py-2 text-left tabular-nums outline-none transition focus-visible:border-scene ${
-          open ? "border-scene" : "border-white/30 hover:border-white/60"
-        }`}
+        className={
+          inline
+            ? `rounded-sm tabular-nums underline decoration-dotted underline-offset-[3px] outline-none transition hover:text-white focus-visible:ring-1 focus-visible:ring-scene ${
+                open ? "text-white decoration-scene" : "decoration-white/35"
+              }`
+            : `flex w-full items-center justify-between gap-2 border-b px-1 py-2 text-left tabular-nums outline-none transition focus-visible:border-scene ${
+                open ? "border-scene" : "border-white/30 hover:border-white/60"
+              }`
+        }
       >
-        <span className={`truncate whitespace-nowrap ${value ? "text-white" : "text-white/45"}`}>{value ? formatTime(value) : placeholder}</span>
-        <svg viewBox="0 0 16 16" className="h-3.5 w-3.5 shrink-0 text-white/50" fill="none" stroke="currentColor" strokeWidth="1.4">
-          <circle cx="8" cy="8" r="6.25" />
-          <path d="M8 4.5V8l2.3 1.6" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+        {inline ? (
+          value ? formatTime(value) : placeholder
+        ) : (
+          <>
+            <span className={`truncate whitespace-nowrap ${value ? "text-white" : "text-white/45"}`}>{value ? formatTime(value) : placeholder}</span>
+            <svg viewBox="0 0 16 16" className="h-3.5 w-3.5 shrink-0 text-white/50" fill="none" stroke="currentColor" strokeWidth="1.4">
+              <circle cx="8" cy="8" r="6.25" />
+              <path d="M8 4.5V8l2.3 1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </>
+        )}
       </button>
 
       {open && (

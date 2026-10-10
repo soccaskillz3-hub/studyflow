@@ -1,10 +1,11 @@
 "use client";
 
-import {use, useCallback, useEffect, useRef, useState} from "react";
+import {use, useCallback, useEffect, useRef, useState, type FormEvent, type PointerEvent as ReactPointerEvent} from "react";
 import CalendarNav from "../../components/CalendarNav";
 import StartButton from "../../components/StartButton";
 import SectionLabel from "../../components/SectionLabel";
 import SessionForm from "../../components/SessionForm";
+import TimePicker from "../../components/TimePicker";
 import {classesOn, useClasses} from "../../lib/classes";
 import {dayEntries, hourRange, layoutBlocks} from "../../lib/dayLayout";
 import {addDays, formatDay, isDayKey} from "../../lib/days";
@@ -15,6 +16,26 @@ const HOUR_PX = 72;
 const PX_PER_MIN = HOUR_PX / 60;
 const SNAP = 15; // minutes; clicked times round down to this
 const LATEST_START = 24 * 60 - 5 - SNAP; // 11:40 PM, so a new session still fits before 11:55 PM
+const LATEST_END = 24 * 60 - 5; // 11:55 PM
+
+type Drag =
+  | {mode: "create"; anchor: number; moved: boolean} // pressing on open space and dragging
+  | {mode: "start" | "end"} // the new block's top or bottom edge
+  | {mode: "move"; offset: number; length: number}; // the new block itself
+
+// Whether the screen is at least as wide as Tailwind's sm breakpoint. Phones keep the add panel
+// as a sheet along the bottom; wider screens show it right next to the new block.
+function useWide() {
+  const [wide, setWide] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia("(min-width: 640px)");
+    const update = () => setWide(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+  return wide;
+}
 
 // One day, hour by hour: today by default, or any day as /calendar?day=2026-10-14.
 export default function CalendarPage({searchParams}: PageProps<"/calendar">) {
@@ -23,6 +44,127 @@ export default function CalendarPage({searchParams}: PageProps<"/calendar">) {
   const day = isDayKey(requested) ? requested : today;
   // Keyed by day, so moving to another day starts fresh (no half-added session carried over).
   return day && today ? <DayView key={day} day={day} isToday={day === today} /> : null;
+}
+
+function ComposerHeading({day, isToday, overlaps}: {day: string; isToday: boolean; overlaps: string[]}) {
+  return (
+    <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+      <p className="text-[11px] uppercase tracking-[0.3em] text-white/80">
+        New session{isToday ? "" : ` · ${formatDay(day, {weekday: "short", month: "short", day: "numeric"})}`}
+      </p>
+      {overlaps.length > 0 && <p className="text-xs text-amber-200">Overlaps {overlaps.join(", ")}</p>}
+    </div>
+  );
+}
+
+// Adding a session right inside its dashed block (wider screens): type the name, press Enter. Drag
+// the block or its edges for the time, or click a time for exact minutes. Short blocks fit it all on one line.
+function BlockComposer({
+  day,
+  start,
+  end,
+  overlaps,
+  oneLine,
+  onTimesChange,
+  onClose,
+}: {
+  day: string;
+  start: string;
+  end: string;
+  overlaps: string[];
+  oneLine: boolean;
+  onTimesChange: (start: string, end: string) => void;
+  onClose: () => void;
+}) {
+  const {addSession} = useSchedule();
+  const [name, setName] = useState("");
+  const [isBreak, setIsBreak] = useState(false);
+  const [missingName, setMissingName] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    // Only with a mouse: focusing on a touch screen would pop the keyboard over the calendar.
+    if (window.matchMedia("(pointer: fine)").matches) input.current?.focus({preventScroll: true});
+  }, []);
+
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    const subject = name.trim() || (isBreak ? "Break" : "");
+    if (!subject) {
+      setMissingName(true);
+      return input.current?.focus();
+    }
+    addSession({subject, start, end, isBreak}, day);
+    onClose();
+  };
+
+  const minutes = toMinutes(end) - toMinutes(start);
+  const times = (
+    // Not clipped (no truncate) here, or the time pickers' dropdowns would be cut off.
+    <span className="flex min-w-0 items-baseline whitespace-nowrap text-[11px] text-scene-soft/90">
+      <TimePicker inline value={start} onChange={(v) => onTimesChange(v, end)} label="Start time" suggestion={start} />
+      <span>&nbsp;–&nbsp;</span>
+      <TimePicker inline value={end} onChange={(v) => onTimesChange(start, v)} label="End time" suggestion={end} />
+      <span className="tabular-nums">&nbsp;· {formatMinutes(minutes)}</span>
+      {overlaps.length > 0 && <span className="min-w-0 truncate text-amber-200">&nbsp;· overlaps {overlaps.join(", ")}</span>}
+    </span>
+  );
+
+  return (
+    <form
+      onSubmit={submit}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") onClose();
+      }}
+      aria-label="Add a session"
+      className="cursor-auto"
+    >
+      <div className="flex items-center gap-2">
+        <input
+          ref={input}
+          type="text"
+          value={name}
+          onChange={(e) => {
+            setName(e.target.value);
+            setMissingName(false);
+          }}
+          placeholder={missingName ? "Give it a name first" : isBreak ? "Break" : "Name it, e.g. CS 135"}
+          aria-label="Subject"
+          aria-invalid={missingName}
+          autoComplete="off"
+          className={`min-w-0 flex-1 select-text bg-transparent p-0 text-sm text-white outline-none ${
+            missingName ? "placeholder:text-rose-300" : "placeholder:text-scene-soft/70"
+          }`}
+        />
+        {oneLine && times}
+        <button
+          type="button"
+          aria-pressed={isBreak}
+          onClick={() => setIsBreak((b) => !b)}
+          className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] uppercase tracking-[0.2em] transition ${
+            isBreak ? "bg-scene/25 text-scene-ink" : "text-white/55 hover:text-white"
+          }`}
+        >
+          Break
+        </button>
+        <button
+          type="submit"
+          className="shrink-0 rounded border border-scene/70 bg-slate-950/50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-scene-ink transition hover:bg-scene/20"
+        >
+          Add
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Cancel"
+          className="shrink-0 px-1 text-sm leading-none text-white/55 transition hover:text-white"
+        >
+          ×
+        </button>
+      </div>
+      {!oneLine && <div className="mt-0.5">{times}</div>}
+    </form>
+  );
 }
 
 function DayView({day, isToday}: {day: string; isToday: boolean}) {
@@ -41,6 +183,10 @@ function DayView({day, isToday}: {day: string; isToday: boolean}) {
   const [draft, setDraft] = useState<{start: string; end: string} | null>(null);
   const [composerKey, setComposerKey] = useState(0); // bumped to reset the form for each new slot
   const [hover, setHover] = useState<number | null>(null); // minutes under the mouse, on open space
+  const [creating, setCreating] = useState(false); // dragging out a new block (panel opens on release)
+  const drag = useRef<Drag | null>(null);
+  const skipClick = useRef(false); // a drag ends in a click event, which shouldn't open another panel
+  const wide = useWide();
 
   const sessions = sessionsOn(day);
   const loaded = isLoaded(day);
@@ -70,9 +216,9 @@ function DayView({day, isToday}: {day: string; isToday: boolean}) {
     scrolled.current = true;
   }, [now, loaded]);
 
-  // Scroll the new block into view when the add panel opens.
+  // Bring the new block (and on phones, its panel) into view when it opens.
   useEffect(() => {
-    if (composerKey > 0) ghost.current?.scrollIntoView({block: "center", behavior: "smooth"});
+    if (composerKey > 0) ghost.current?.scrollIntoView({block: "nearest", behavior: "smooth"});
   }, [composerKey]);
 
   const updateDraft = useCallback((start: string, end: string) => setDraft({start, end}), []);
@@ -97,6 +243,48 @@ function DayView({day, isToday}: {day: string; isToday: boolean}) {
     const latest = Math.min(lastHour * 60 - SNAP, LATEST_START);
     return Math.min(Math.max(Math.floor(minutes / SNAP) * SNAP, firstHour * 60), latest);
   };
+  // The same, rounded to the nearest snap: for dragging an edge, which should land where the pointer is.
+  const minutesNear = (clientY: number) => {
+    const rect = grid.current!.getBoundingClientRect();
+    const minutes = firstHour * 60 + (clientY - rect.top) / PX_PER_MIN;
+    return Math.min(Math.max(Math.round(minutes / SNAP) * SNAP, firstHour * 60), LATEST_END);
+  };
+
+  // Dragging on open space draws a new block from where the press began.
+  const createFrom = (anchor: number, at: number) =>
+    setDraft({
+      start: fromMinutes(Math.min(anchor, at)),
+      end: fromMinutes(Math.min(Math.max(anchor, at) + SNAP, LATEST_END)),
+    });
+
+  // Dragging the new block's edges or body (mouse or touch). Which part is in its data-drag.
+  const grab = (e: ReactPointerEvent<HTMLElement>) => {
+    const mode = e.currentTarget.dataset.drag as "start" | "end" | "move";
+    // Typing, clicking a button or picking a time inside the block, not dragging it.
+    if ((e.target as HTMLElement).closest("input, button, [role=dialog]")) return;
+    if (!draft || draftStart === null || draftEnd === null) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    drag.current =
+      mode === "move"
+        ? {mode, offset: minutesNear(e.clientY) - draftStart, length: draftEnd - draftStart}
+        : {mode};
+  };
+  const pull = (e: ReactPointerEvent<HTMLElement>) => {
+    const d = drag.current;
+    if (!d || d.mode === "create" || draftStart === null || draftEnd === null) return;
+    const at = minutesNear(e.clientY);
+    if (d.mode === "start") updateDraft(fromMinutes(Math.min(at, draftEnd - SNAP)), fromMinutes(draftEnd));
+    else if (d.mode === "end") updateDraft(fromMinutes(draftStart), fromMinutes(Math.max(at, draftStart + SNAP)));
+    else if (d.mode === "move") {
+      const start = Math.min(Math.max(at - d.offset, firstHour * 60), LATEST_END - d.length);
+      updateDraft(fromMinutes(start), fromMinutes(start + d.length));
+    }
+  };
+  const letGo = () => {
+    drag.current = null;
+  };
 
   // Open the add panel at a start time. It runs an hour, or until the next session if that comes sooner.
   const openComposer = (requested: number) => {
@@ -110,6 +298,7 @@ function DayView({day, isToday}: {day: string; isToday: boolean}) {
   const draftStart = draft?.start ? toMinutes(draft.start) : null;
   const draftEnd = draft?.end ? toMinutes(draft.end) : null;
   const draftValid = draftStart !== null && draftEnd !== null && draftEnd > draftStart;
+  const editing = wide && !creating; // the new block is the editor itself (phones get a sheet)
   const overlaps = draftValid
     ? entries.filter((e) => toMinutes(e.start) < draftEnd && draftStart < toMinutes(e.end))
     : [];
@@ -192,14 +381,50 @@ function DayView({day, isToday}: {day: string; isToday: boolean}) {
             {/* Grid, sessions and classes */}
             <div
               ref={grid}
-              className="relative flex-1 cursor-pointer"
-              onClick={(e) => {
-                if ((e.target as HTMLElement).closest("[data-block]")) return;
-                openComposer(minutesAt(e.clientY));
+              className="relative flex-1 cursor-pointer select-none"
+              onPointerDown={(e) => {
+                // With a mouse or pen, press and drag to draw the session. Touch screens scroll the
+                // day instead, so there a tap opens the panel (see onClick) and the block's handles
+                // adjust it.
+                if (e.button !== 0 || e.pointerType === "touch") return;
+                if ((e.target as HTMLElement).closest("[data-block], [data-composer]")) return;
+                e.currentTarget.setPointerCapture(e.pointerId);
+                drag.current = {mode: "create", anchor: minutesAt(e.clientY), moved: false};
+                setHover(null);
               }}
               onPointerMove={(e) => {
-                if (e.pointerType !== "mouse" || (e.target as HTMLElement).closest("[data-block]")) return setHover(null);
+                const d = drag.current;
+                if (d?.mode === "create") {
+                  const at = minutesAt(e.clientY);
+                  if (at !== d.anchor) d.moved = true;
+                  if (d.moved) {
+                    setCreating(true);
+                    createFrom(d.anchor, at);
+                  }
+                  return;
+                }
+                if (e.pointerType !== "mouse" || (e.target as HTMLElement).closest("[data-block], [data-composer]")) return setHover(null);
                 setHover(minutesAt(e.clientY));
+              }}
+              onPointerUp={() => {
+                const d = drag.current;
+                if (d?.mode !== "create") return;
+                drag.current = null;
+                skipClick.current = true;
+                if (d.moved) {
+                  setCreating(false);
+                  setComposerKey((k) => k + 1);
+                } else {
+                  openComposer(d.anchor);
+                }
+              }}
+              onClick={(e) => {
+                if (skipClick.current) {
+                  skipClick.current = false;
+                  return;
+                }
+                if ((e.target as HTMLElement).closest("[data-block], [data-composer]")) return;
+                openComposer(minutesAt(e.clientY));
               }}
               onPointerLeave={() => setHover(null)}
             >
@@ -218,7 +443,7 @@ function DayView({day, isToday}: {day: string; isToday: boolean}) {
               <div className="absolute inset-x-0 border-t border-white/15" style={{top: top(lastHour * 60)}} />
 
               {/* Where a click would add a session */}
-              {hover !== null && (
+              {hover !== null && !draft && (
                 <div
                   className="pointer-events-none absolute inset-x-1 flex items-center rounded-md border border-dashed border-scene/50 bg-scene/[0.06] px-2.5 text-[11px] text-scene-soft/90 tabular-nums"
                   style={{top: top(hover) + 1, height: 2 * SNAP * PX_PER_MIN - 2}}
@@ -341,18 +566,59 @@ function DayView({day, isToday}: {day: string; isToday: boolean}) {
                 );
               })}
 
-              {/* The session being added */}
+              {/* The session being added. Drag its body to move it, or its top and bottom edges to
+                  change when it starts and ends. */}
               {draftValid && (
                 <div
                   ref={ghost}
-                  className="pointer-events-none absolute inset-x-1 z-[5] overflow-hidden rounded-md border-2 border-dashed border-scene bg-scene/10 px-2.5 py-1 shadow-[0_0_18px_var(--accent-glow)]"
+                  data-composer
+                  data-drag="move"
+                  onPointerDown={creating ? undefined : grab}
+                  onPointerMove={pull}
+                  onPointerUp={letGo}
+                  onPointerCancel={letGo}
+                  className={`absolute inset-x-1 z-[5] touch-none rounded-md border-2 border-dashed border-scene bg-scene/10 px-2.5 py-1 shadow-[0_0_18px_var(--accent-glow)] ${
+                    creating ? "pointer-events-none" : "cursor-grab active:cursor-grabbing"
+                  } ${editing ? "" : "overflow-hidden"}`}
                   style={{top: top(draftStart) + 1, height: Math.max((draftEnd - draftStart) * PX_PER_MIN, 22) - 2}}
-                  aria-hidden
                 >
-                  <span className="block truncate text-sm text-scene-ink">New session</span>
-                  <span className="block truncate text-[11px] text-scene-soft/90 tabular-nums">
-                    {formatTime(draft!.start)} – {formatTime(draft!.end)}
-                  </span>
+                  {editing ? (
+                    <BlockComposer
+                      key={composerKey}
+                      day={day}
+                      start={draft!.start}
+                      end={draft!.end}
+                      overlaps={overlaps.map((e) => e.label)}
+                      oneLine={draftEnd - draftStart < 45}
+                      onTimesChange={updateDraft}
+                      onClose={closeComposer}
+                    />
+                  ) : (
+                    <div aria-hidden>
+                      <span className="block truncate text-sm text-scene-ink">New session</span>
+                      <span className="block truncate text-[11px] text-scene-soft/90 tabular-nums">
+                        {formatTime(draft!.start)} – {formatTime(draft!.end)} · {formatMinutes(draftEnd - draftStart)}
+                      </span>
+                    </div>
+                  )}
+                  {!creating &&
+                    (["start", "end"] as const).map((edge) => (
+                      <span
+                        key={edge}
+                        data-drag={edge}
+                        onPointerDown={grab}
+                        onPointerMove={pull}
+                        onPointerUp={letGo}
+                        onPointerCancel={letGo}
+                        aria-hidden
+                        // Just the grip while editing, so the edge doesn't cover the name box.
+                        className={`absolute flex h-3 cursor-ns-resize touch-none justify-center ${
+                          editing ? "left-1/2 w-14 -translate-x-1/2" : "inset-x-0"
+                        } ${edge === "start" ? "-top-0.5 items-start" : "-bottom-0.5 items-end"}`}
+                      >
+                        <span className="my-0.5 h-1 w-8 rounded-full bg-scene/80 shadow-[0_0_6px_var(--accent-glow)]" />
+                      </span>
+                    ))}
                 </div>
               )}
 
@@ -374,29 +640,24 @@ function DayView({day, isToday}: {day: string; isToday: boolean}) {
         </div>
       </div>
 
-      {draft && (
+      {/* Phones: the add panel is a sheet along the bottom, clear of the keyboard and the
+          day's own scrolling. */}
+      {draft && !wide && (
         <div
           role="dialog"
           aria-label="Add a session"
-          className="fixed inset-x-0 bottom-0 z-[60] px-3 pb-3 sm:px-8 sm:pb-6"
+          className="fixed inset-x-0 bottom-0 z-[60] px-3 pb-3"
           onKeyDown={(e) => {
             if (e.key === "Escape") closeComposer();
           }}
         >
-          <div className="sf-panel sf-sheet mx-auto max-w-3xl rounded-2xl border p-4 [text-shadow:none] sm:p-5">
-            <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-              <p className="text-[11px] uppercase tracking-[0.3em] text-white/80">
-                New session{isToday ? "" : ` · ${formatDay(day, {weekday: "short", month: "short", day: "numeric"})}`}
-              </p>
-              {overlaps.length > 0 && (
-                <p className="text-xs text-amber-200">Overlaps {overlaps.map((e) => e.label).join(", ")}</p>
-              )}
-            </div>
+          <div className="sf-panel sf-sheet mx-auto max-w-3xl rounded-2xl border p-4 [text-shadow:none]">
+            <ComposerHeading day={day} isToday={isToday} overlaps={overlaps.map((e) => e.label)} />
             <SessionForm
               key={composerKey}
               day={day}
-              initialStart={draft.start}
-              initialEnd={draft.end}
+              start={draft.start}
+              end={draft.end}
               autoFocus
               onAdded={closeComposer}
               onCancel={closeComposer}

@@ -1,6 +1,6 @@
 "use client";
 
-import type {CSSProperties} from "react";
+import {useState, type CSSProperties} from "react";
 import type {SunTimes} from "../../lib/weather";
 import {formatMinutes} from "../../lib/time";
 
@@ -17,10 +17,19 @@ const secondsIntoMinute = (d: Date) => d.getSeconds() + d.getMilliseconds() / 10
 
 const longDate = (d: Date) => d.toLocaleDateString(undefined, {weekday: "long", month: "long", day: "numeric"});
 
+// How far into the minute the sweeping animations start, as a negative delay. Fixed when the face
+// first draws: the animation keeps its own time from then on, so a fresh delay on each second's
+// render would push it a further second ahead every tick (running double speed, then snapping back).
+// Read from the clock right then, not from `now`, which can be most of a second old.
+function useMinuteStart() {
+  const [delay] = useState(() => `-${secondsIntoMinute(new Date())}s`);
+  return delay;
+}
+
 // A rotation that keeps turning once a minute from where the second hand is now.
-function sweep(now: Date, smooth: boolean): CSSProperties {
+function sweep(now: Date, smooth: boolean, delay: string): CSSProperties {
   if (!smooth) return {transform: `rotate(${now.getSeconds() * 6}deg)`};
-  return {animation: "sf-clock-spin 60s linear infinite", animationDelay: `-${secondsIntoMinute(now)}s`};
+  return {animation: "sf-clock-spin 60s linear infinite", animationDelay: delay};
 }
 
 // Fixed-width cells per digit (sized per theme, as on the focus timer) so the time never jitters.
@@ -46,20 +55,31 @@ const caption = "text-[11px] uppercase tracking-[0.35em] text-white/70 sm:text-x
 
 // ---------- Classic: big, quiet numbers ----------
 
-export function ClassicFace({now, smooth}: FaceProps) {
+// With seconds on, they sit small beside the minutes, under AM/PM; otherwise they're a line that
+// fills across each minute.
+export function ClassicFace({now, smooth, seconds}: FaceProps & {seconds: boolean}) {
+  const delay = useMinuteStart();
   return (
     <div className="flex flex-col items-center text-center">
-      <p className="sf-clock-glow font-display text-[clamp(5rem,22vw,15rem)] leading-none whitespace-nowrap">
-        <Digits text={`${hour12(now)}:${pad(now.getMinutes())}`} />
-        <span className="ml-[0.12em] align-top text-[0.16em] tracking-[0.2em] text-scene-soft">{meridiem(now)}</span>
+      <p className="sf-clock-glow flex items-stretch font-display text-[clamp(5rem,22vw,15rem)] leading-none whitespace-nowrap">
+        <span>
+          <Digits text={`${hour12(now)}:${pad(now.getMinutes())}`} />
+        </span>
+        <span className="ml-[0.12em] flex flex-col justify-between py-[0.06em]">
+          <span className="text-[0.16em] tracking-[0.2em] text-scene-soft">{meridiem(now)}</span>
+          {seconds && (
+            <span className="text-[0.3em] text-white/60 tabular-nums" aria-hidden>
+              <Digits text={pad(now.getSeconds())} />
+            </span>
+          )}
+        </span>
       </p>
-      {/* The seconds as a line that fills across each minute. */}
-      <div className="mt-6 h-px w-[min(26rem,70vw)] overflow-hidden bg-white/15">
+      <div className={`mt-6 h-px w-[min(26rem,70vw)] overflow-hidden bg-white/15 ${seconds ? "invisible" : ""}`}>
         <div
           className="h-px origin-left bg-scene shadow-[0_0_10px_var(--accent-glow)]"
           style={
             smooth
-              ? {animation: "sf-clock-fill 60s linear infinite", animationDelay: `-${secondsIntoMinute(now)}s`}
+              ? {animation: "sf-clock-fill 60s linear infinite", animationDelay: delay}
               : {transform: `scaleX(${now.getSeconds() / 60})`}
           }
         />
@@ -79,6 +99,7 @@ const NUMERALS = [
 ];
 
 export function AnalogFace({now, smooth}: FaceProps) {
+  const delay = useMinuteStart();
   const s = secondsIntoMinute(now);
   const minuteAngle = (now.getMinutes() + s / 60) * 6;
   const hourAngle = ((now.getHours() % 12) + now.getMinutes() / 60) * 30;
@@ -141,7 +162,7 @@ export function AnalogFace({now, smooth}: FaceProps) {
       <g className="sf-clock-hand" transform={`rotate(${minuteAngle} 100 100)`}>
         <path d="M98.6 106 L99.4 24 Q100 21 100.6 24 L101.4 106 Z" fill="white" />
       </g>
-      <g className="sf-clock-second" style={sweep(now, smooth)}>
+      <g className="sf-clock-second" style={sweep(now, smooth, delay)}>
         <line x1="100" y1="122" x2="100" y2="16" className="stroke-scene" strokeWidth="0.7" strokeLinecap="round" />
         <circle cx="100" cy="118" r="2.6" className="fill-scene" />
       </g>
@@ -240,6 +261,7 @@ function Ring({r, fraction, width, opacity, style}: {r: number; fraction: number
 }
 
 export function OrbitFace({now, smooth}: FaceProps) {
+  const delay = useMinuteStart();
   const s = secondsIntoMinute(now);
   const minutes = (now.getMinutes() + s / 60) / 60;
   const hours = ((now.getHours() % 12) + now.getMinutes() / 60) / 12;
@@ -260,7 +282,7 @@ export function OrbitFace({now, smooth}: FaceProps) {
               ? ({
                   "--ring": `${c}px`,
                   animation: "sf-clock-ring 60s linear infinite",
-                  animationDelay: `-${s}s`,
+                  animationDelay: delay,
                 } as CSSProperties)
               : undefined
           }

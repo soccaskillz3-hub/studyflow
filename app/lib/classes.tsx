@@ -47,6 +47,15 @@ const sameMeeting = (a: Meeting, b: Meeting) =>
   a.startsOn === b.startsOn &&
   a.endsOn === b.endsOn;
 
+// Tests, exams and other one-off meetings (they start and end on the same day) from today on,
+// soonest first. Today's stay in the list until they've finished.
+export function upcomingTests(classes: ClassMeeting[], today: string, nowMinutes: number) {
+  return classes
+    .filter((c) => c.startsOn !== null && c.startsOn === c.endsOn)
+    .filter((c) => c.startsOn! > today || (c.startsOn === today && toMinutes(c.end) > nowMinutes))
+    .sort((a, b) => (a.startsOn === b.startsOn ? toMinutes(a.start) - toMinutes(b.start) : a.startsOn! < b.startsOn! ? -1 : 1));
+}
+
 // Classes that meet on a date ("YYYY-MM-DD", the user's local day), sorted by start time.
 export function classesOn(classes: ClassMeeting[], day: string) {
   const weekday = toDate(day).getDay();

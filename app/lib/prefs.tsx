@@ -22,9 +22,10 @@ export type Prefs = {
   startMode: StartMode; // what "Start?" opens
   startDefaultAsked: boolean; // asked once whether their first choice should be the default
   clockStyle: ClockStyle;
+  clockSeconds: boolean; // the classic clock shows seconds as numbers, not a line filling each minute (toggled on the clock)
 };
 
-const DEFAULTS: Prefs = {classPromptDismissed: false, startMode: "ask", startDefaultAsked: false, clockStyle: "classic"};
+const DEFAULTS: Prefs = {classPromptDismissed: false, startMode: "ask", startDefaultAsked: false, clockStyle: "classic", clockSeconds: false};
 
 const oneOf = <T extends string>(value: unknown, allowed: readonly T[], fallback: T) =>
   allowed.includes(value as T) ? (value as T) : fallback;
@@ -39,6 +40,7 @@ function parse(raw: Record<string, unknown>): Prefs {
       CLOCK_STYLES.map((s) => s.id),
       DEFAULTS.clockStyle,
     ),
+    clockSeconds: raw.clockSeconds === true,
   };
 }
 

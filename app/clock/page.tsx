@@ -94,9 +94,10 @@ function useIdle() {
 
 function Face({style, ...props}: FaceProps & {style: ClockStyle}) {
   const {sun} = useScene();
+  const {prefs} = usePrefs();
   switch (style) {
     case "classic":
-      return <ClassicFace {...props} />;
+      return <ClassicFace {...props} seconds={prefs?.clockSeconds ?? false} />;
     case "analog":
       return <AnalogFace {...props} />;
     case "words":
@@ -223,8 +224,10 @@ export default function ClockPage({searchParams}: PageProps<"/clock">) {
   const offset = drag?.dx ?? trackpadDx;
   const fade = `transition-opacity duration-700 ${idle && !drag ? "opacity-0" : "opacity-100"}`;
   const sessionLeft = session ? Math.max(0, toMinutes(session.end) - nowMinutes(now)) : 0;
+  // To the second (not the minute), so the line creeps forward instead of jumping once a minute.
+  const nowExact = nowMinutes(now) + now.getSeconds() / 60;
   const sessionProgress = session
-    ? Math.min(1, Math.max(0, (nowMinutes(now) - toMinutes(session.start)) / sessionMinutes(session)))
+    ? Math.min(1, Math.max(0, (nowExact - toMinutes(session.start)) / sessionMinutes(session)))
     : 0;
 
   return (
@@ -315,7 +318,10 @@ export default function ClockPage({searchParams}: PageProps<"/clock">) {
                 </span>
               </p>
               <div className="mt-1.5 h-px bg-white/15">
-                <div className="h-px bg-scene shadow-[0_0_6px_var(--accent-glow)]" style={{width: `${sessionProgress * 100}%`}} />
+                <div
+                  className="h-px origin-left bg-scene shadow-[0_0_6px_var(--accent-glow)] transition-transform duration-1000 ease-linear motion-reduce:transition-none"
+                  style={{transform: `scaleX(${sessionProgress})`}}
+                />
               </div>
             </div>
             <button
@@ -332,6 +338,17 @@ export default function ClockPage({searchParams}: PageProps<"/clock">) {
           <p className="text-[11px] uppercase tracking-[0.3em] text-white/80" aria-live="polite">
             {current.label}
             <span className="ml-2 normal-case tracking-normal text-white/45 max-sm:hidden">{current.hint}</span>
+            {/* Classic's seconds: a line that fills each minute, or small numbers. Kept quiet. */}
+            {current.id === "classic" && (
+              <button
+                type="button"
+                onClick={() => setPrefs({clockSeconds: !prefs.clockSeconds})}
+                aria-pressed={prefs.clockSeconds}
+                className="ml-3 normal-case tracking-normal text-white/30 underline decoration-white/15 underline-offset-4 transition hover:text-white/75 hover:decoration-white/40"
+              >
+                {prefs.clockSeconds ? "seconds as a line" : "show seconds"}
+              </button>
+            )}
           </p>
           <div className="flex items-center gap-2.5">
             {CLOCK_STYLES.map((s, i) => (
