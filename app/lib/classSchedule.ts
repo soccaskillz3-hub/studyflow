@@ -1,10 +1,12 @@
-// Reads a class schedule pasted from a student portal (Waterloo Quest's list view, other
-// PeopleSoft systems, or a plain list like "CS 135 LEC MWF 10:30-11:20 MC 2065") and finds each
-// weekly meeting: course, component, days, times, room and the dates it runs between.
+// Reads a class schedule pasted from a student portal (Waterloo Quest's list view, TMU's
+// MyServiceHub and other PeopleSoft systems, York's timetables, or a plain list like
+// "CS 135 LEC MWF 10:30-11:20 MC 2065") and finds each weekly meeting: course, component, days,
+// times, room and the dates it runs between.
 //
 // Copying a web table can put each cell on its own line or a whole row on one, so the parser
-// doesn't rely on layout. It looks for day + time ranges ("MWF 10:30AM - 11:20AM") and takes
-// the course and component from what came before them, and the room and dates from what follows.
+// doesn't rely on layout. It looks for days + times, either a range ("MWF 10:30AM - 11:20AM") or
+// a start and a length in minutes ("M 13:00 80", as York lists them), and takes the course and
+// component from what came before them, and the room and dates from what follows.
 
 export type Meeting = {
   code: string; // "CS 135"
@@ -43,6 +45,22 @@ export const COMPONENTS: Record<string, string> = {
   OLN: "Online",
 };
 
+// Other schools' codes for the same components: York writes LECT, TUTR, SEMR and so on.
+const COMPONENT_ALIASES: Record<string, string> = {
+  LECT: "LEC",
+  BLEN: "LEC", // York: blended (part online) lecture
+  TUTR: "TUT",
+  SEMR: "SEM",
+  LABR: "LAB",
+  STDO: "STU",
+  PRAC: "PRA",
+  ONLN: "OLN",
+  CLIN: "CLN",
+};
+
+// LEC, or what another school calls it (LECT -> LEC); undefined if it isn't a component code.
+const componentCode = (word: string) => (COMPONENTS[word] ? word : COMPONENT_ALIASES[word]);
+
 const COMPONENT_WORDS: Record<string, string> = {
   lecture: "LEC",
   tutorial: "TUT",
@@ -73,11 +91,17 @@ const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "
 // 10:30AM, 10:30 a.m., 2pm, 14:00
 const TIME = String.raw`(\d{1,2})(?::(\d{2}))?(?:\s*([ap])\.?\s*m\b\.?)?`;
 const TIME_RANGE = new RegExp(String.raw`(?<![\d/:.])${TIME}\s*(?:-|to)\s*${TIME}`, "gi");
+// 13:00 80, or 1:00PM 80 min: a start time and a length in minutes.
+const START_AND_LENGTH = new RegExp(
+  String.raw`(?<![\d/:.])(\d{1,2}):(\d{2})(?:\s*([ap])\.?\s*m\b\.?)?\s+(\d{2,3})(?:\s*min(?:ute)?s?\b\.?)?(?![\d:/.])`,
+  "gi",
+);
 const NEEDS_MINUTES_OR_MERIDIEM = /:\d{2}|[ap]\.?\s*m/i;
 
 // CS 135, MATH 137, CS 136L, ECE 105, PD 1. Rooms (MC 2065) look the same; context decides.
 const CODE = /\b([A-Z]{2,6})\s?(\d{1,4}[A-Z]{0,2})\b(?!:)/g;
-const CODE_ONLY_LINE = /^[A-Z]{1,6}\d?\s?\d{1,4}[A-Z]{0,2}$/;
+// A room on a line of its own: "MC 2065", "TRS 1-067", "ENG LG14", "SLH D".
+const CODE_ONLY_LINE = /^(?:[A-Z]{1,6}\d?\s?[A-Z]{0,3}\d{1,4}[A-Z]{0,2}(?:-\d{1,4}[A-Z]?)?|[A-Z]{2,5}\s[A-Z])$/;
 
 const DATE_PATTERNS: [RegExp, (m: RegExpMatchArray) => string | null][] = [
   // 2025-09-08 or 2025/09/08
@@ -116,8 +140,8 @@ function findDates(line: string) {
 
 // "MWF", "TTh", "MoWeFr", "Tue" -> day numbers, or null if the word isn't made only of days.
 function parseDayWord(word: string): number[] | null {
-  // "TUT" would otherwise read as Tue, Sun, Tue.
-  if (COMPONENTS[word.toUpperCase()] || COMPONENT_WORDS[word.toLowerCase()]) return null;
+  // "TUT" would otherwise read as Tue, Sun, Tue (and York's "TUTR" as Tue, Sun, Tue, Thu).
+  if (componentCode(word.toUpperCase()) || COMPONENT_WORDS[word.toLowerCase()]) return null;
   let rest = word.toLowerCase();
   const days: number[] = [];
   while (rest) {
@@ -175,11 +199,32 @@ function parseRange(m: RegExpMatchArray) {
   return {start, end};
 }
 
+// The class times on a line: a range ("10:30AM - 11:20AM"), or else a start and a length in
+// minutes ("13:00 80"). The length must be a plausible class (20 minutes to 8 hours, in steps
+// of 5), so other numbers after a time aren't read as one.
+function findTimes(line: string) {
+  for (const m of line.matchAll(TIME_RANGE)) {
+    const times = parseRange(m);
+    if (times) return {index: m.index!, length: m[0].length, ...times};
+  }
+  for (const m of line.matchAll(START_AND_LENGTH)) {
+    const [, h, min, meridiem, length] = m;
+    if (+length < 20 || +length > 480 || +length % 5) continue;
+    let start = to24(+h, +min, meridiem);
+    if (start === null) continue;
+    if (!meridiem && +h < 8) start += 12 * 60; // as above: nobody has class at 2 AM
+    if (start + +length > 24 * 60) continue;
+    return {index: m.index!, length: m[0].length, start, end: start + +length};
+  }
+  return null;
+}
+
 const hhmm = (minutes: number) => `${pad(Math.floor(minutes / 60))}:${pad(minutes % 60)}`;
 
 function findComponent(text: string) {
   for (const word of text.split(/[^A-Za-z]+/)) {
-    if (COMPONENTS[word.toUpperCase()] && word === word.toUpperCase()) return word.toUpperCase();
+    const code = componentCode(word);
+    if (code) return code;
     const named = COMPONENT_WORDS[word.toLowerCase()];
     if (named && word.length >= 3) return named;
   }
@@ -189,15 +234,16 @@ function findComponent(text: string) {
 // Course codes in a stretch of text, skipping component + section pairs like "LEC 001".
 function findCodes(text: string) {
   return [...text.matchAll(CODE)]
-    .filter((m) => !COMPONENTS[m[1]])
+    .filter((m) => !componentCode(m[1]))
     .map((m) => ({code: `${m[1]} ${m[2]}`, index: m.index!, end: m.index! + m[0].length}));
 }
 
 // A course title after its code: "CS 135 - Designing Functional Programs". Stops at a
 // component ("Lecture") or section number, which aren't part of the title.
 function titleAfter(text: string) {
-  const words = text.split(/\s+/);
-  const stop = words.findIndex((w) => COMPONENTS[w] || COMPONENT_WORDS[w.toLowerCase()] || /^\d{3}$/.test(w));
+  // York puts the credits first: "EECS 1012 3.00 Net-centric Introduction to Computing".
+  const words = text.replace(/^\s*[-–—:|]?\s*\d{1,2}\.\d{2}\b/, "").split(/\s+/);
+  const stop = words.findIndex((w) => componentCode(w) || COMPONENT_WORDS[w.toLowerCase()] || /^\d{3}$/.test(w));
   const title = (stop === -1 ? words : words.slice(0, stop))
     .join(" ")
     .replace(/^\s*[-–—:|]\s*/, "")
@@ -207,11 +253,15 @@ function titleAfter(text: string) {
   return title.slice(0, 120);
 }
 
-// A room right after the time: "MC 2065", "E7 4053", "Science Hall 120", "Online", "TBA".
+// A room right after the time: "MC 2065", "E7 4053", "TRS 1-067", "ENG LG14", "SLH D",
+// "Science Hall 120", "Online", "TBA".
 function findLocation(text: string) {
-  const trimmed = text.replace(/^[\s\-|,]+/, "");
-  const room = trimmed.match(/^([A-Z]{1,6}\d?\s?\d{1,4}[A-Z]?)\b/);
+  const trimmed = text.replace(/^[\s\-|,]+/, "").replace(/^(?:room|location|where)\b\s*[:#]?\s*/i, "");
+  const room = trimmed.match(/^([A-Z]{1,6}\d?\s?[A-Z]{0,3}\d{1,4}[A-Z]?(?:-\d{1,4}[A-Z]?)?)\b/);
   if (room) return room[1];
+  // York's lecture halls are a building and a letter: "SLH D", "CLH A".
+  const hall = trimmed.match(/^([A-Z]{2,5}\s[A-Z])(?=\s|$)/);
+  if (hall) return hall[1];
   const named = trimmed.match(/^(online|tba|remote|virtual)\b/i);
   if (named) return named[1].toUpperCase() === "TBA" ? "TBA" : capitalize(named[1]);
   const building = trimmed.match(/^((?:[A-Z][A-Za-z.'&]*\s+){1,4}\d{1,4}[A-Z]?)\b(?![/\d])/);
@@ -220,9 +270,21 @@ function findLocation(text: string) {
 
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
 
+// The course named in a short piece of text, such as a calendar event's title ("CPS 109 -
+// Lecture", "AP/EECS 1012 LAB 01"): its code, title and component, as far as they're there.
+export function courseFromText(text: string) {
+  const clean = text.replace(/\b[A-Z]{2}\/(?=[A-Z]{2,6}\s?\d)/g, "");
+  const codes = findCodes(clean);
+  const component = findComponent(clean);
+  if (!codes.length) return {code: "", title: "", component};
+  return {code: codes[0].code, title: titleAfter(clean.slice(codes[0].end)), component};
+}
+
 export function parseSchedule(input: string): ParseResult {
   const lines = input
     .replace(/[‐-―−]/g, "-")
+    // York's faculty prefix: "AP/POLS 1000" is POLS 1000.
+    .replace(/\b[A-Z]{2}\/(?=[A-Z]{2,6}\s?\d)/g, "")
     .replace(/ /g, " ")
     .split(/\r?\n/)
     .map((l) => l.replace(/\t+/g, "  ").trim());
@@ -237,20 +299,10 @@ export function parseSchedule(input: string): ParseResult {
 
   for (const line of lines) {
     if (!line) continue;
-    // The first time range on the line that's really a time (not part of a date).
-    let range: RegExpMatchArray | null = null;
-    let times: {start: number; end: number} | null = null;
-    for (const m of line.matchAll(TIME_RANGE)) {
-      times = parseRange(m);
-      if (times) {
-        range = m;
-        break;
-      }
-    }
-
-    if (range && times) {
-      const before = line.slice(0, range.index);
-      let after = line.slice(range.index! + range[0].length);
+    const times = findTimes(line);
+    if (times) {
+      const before = line.slice(0, times.index);
+      let after = line.slice(times.index + times.length);
       let {days} = takeDays(before, true);
       let daysEndAt = before.length;
       if (days.length) {
@@ -314,7 +366,7 @@ export function parseSchedule(input: string): ParseResult {
       continue;
     }
 
-    const componentOnly = COMPONENTS[line] ? line : COMPONENT_WORDS[line.toLowerCase()];
+    const componentOnly = componentCode(line) ?? COMPONENT_WORDS[line.toLowerCase()];
     if (componentOnly) {
       component = componentOnly;
       roomSlot = null;
@@ -322,7 +374,9 @@ export function parseSchedule(input: string): ParseResult {
     }
 
     const codes = findCodes(line);
-    if (codes.length && codes[0].index < 3) {
+    // A course starts the line, or follows a label: "Course: BIO 1100 - Cell Biology".
+    const label = codes.length ? line.slice(0, codes[0].index) : "";
+    if (codes.length && (codes[0].index < 3 || /^(?:course|class|subject)(?:\s+code)?\s*[:#-]?\s*$/i.test(label))) {
       course = {code: codes[0].code, title: titleAfter(line.slice(codes[0].end))};
       codesSeen.add(codes[0].code);
       component = findComponent(line.slice(codes[0].end)) || "";
@@ -333,11 +387,14 @@ export function parseSchedule(input: string): ParseResult {
     }
   }
 
-  // The same meeting pasted twice (or listed once per week) only needs to be added once.
+  // The same meeting pasted twice (or listed once per week) only needs to be added once, and
+  // one listed a row per day (York: LECT01 on M, then again on F) is one meeting on both days.
   const unique = new Map<string, Meeting>();
   for (const m of meetings) {
-    const key = [m.code, m.component, m.days.join(""), m.start, m.end, m.startsOn, m.endsOn].join("|");
-    if (!unique.has(key)) unique.set(key, m);
+    const key = [m.code, m.component, m.start, m.end, m.location, m.startsOn, m.endsOn].join("|");
+    const same = unique.get(key);
+    if (!same) unique.set(key, m);
+    else same.days = [...new Set([...same.days, ...m.days])].sort((a, b) => a - b);
   }
 
   const withTimes = new Set(meetings.map((m) => m.code));

@@ -1,8 +1,9 @@
 "use client";
 
-import {useState} from "react";
+import {useRef, useState, type ReactNode} from "react";
 import DatePicker from "../../components/DatePicker";
 import SectionLabel from "../../components/SectionLabel";
+import {isCalendarFile, parseCalendarFile} from "../../lib/calendarFile";
 import {describeDays, parseSchedule, type Meeting, type ParseResult} from "../../lib/classSchedule";
 import {useClasses, type ClassMeeting} from "../../lib/classes";
 import {formatTime} from "../../lib/time";
@@ -11,6 +12,77 @@ const EXAMPLE = `CS 135 - Designing Functional Programs
 5873  001  LEC  MWF 10:30AM - 11:20AM  MC 2065  09/08/2025 - 12/02/2025
 5880  102  TUT  F 2:30PM - 3:20PM  MC 4021  09/08/2025 - 12/02/2025
 MATH 137  LEC  TTh 1:00PM - 2:20PM  RCH 101`;
+
+// Where to find your schedule, school by school. Anything else falls back to the general steps,
+// a calendar file, or the AI helper.
+const SCHOOLS: {id: string; name: string; example?: string; steps: ReactNode}[] = [
+  {
+    id: "waterloo",
+    name: "Waterloo",
+    steps: (
+      <>
+        On Quest, open <b className="font-normal text-white">Class Schedule</b> and choose{" "}
+        <b className="font-normal text-white">List View</b>. Then select everything on the page (⌘A or Ctrl+A) and copy.
+      </>
+    ),
+  },
+  {
+    id: "tmu",
+    name: "TMU",
+    example: `CPS 109 - Computer Science I
+1234  011  Lecture  Mo 10:00AM - 11:50AM  KHE 225  Staff  09/08/2026 - 12/08/2026
+1240  031  Laboratory  We 2:00PM - 3:50PM  ENG LG14  Staff  09/08/2026 - 12/08/2026`,
+    steps: (
+      <>
+        On MyServiceHub, go to <b className="font-normal text-white">Manage Classes</b> →{" "}
+        <b className="font-normal text-white">View My Classes</b> (the list, not My Weekly Schedule). Then select everything
+        on the page (⌘A or Ctrl+A) and copy.
+      </>
+    ),
+  },
+  {
+    id: "york",
+    name: "York",
+    example: `AP/ECON 1000 3.00 Introduction to Microeconomics
+LECT 01  M  13:00  80  ACW 206  Keele
+TUTR 01  F  11:30  50  SLH D  Keele`,
+    steps: (
+      <>
+        On York&apos;s course timetables, copy each of your courses: the line with its code (like AP/ECON 1000 3.00) and the
+        rows for your sections, with their <b className="font-normal text-white">Type, Day, Start Time, Duration</b> and{" "}
+        <b className="font-normal text-white">Location</b>. If your schedule only shows as a calendar, use your AI below.
+      </>
+    ),
+  },
+  {
+    id: "other",
+    name: "Another school",
+    steps: (
+      <>
+        Open your class schedule in your school&apos;s portal (a list view works best), select everything on the page (⌘A or
+        Ctrl+A) and copy. If you can download it as a calendar file (.ics), upload that instead. Or let your AI do it, below.
+      </>
+    ),
+  },
+];
+
+// For the AI helper: turns any schedule, even a screenshot, into lines the importer reads.
+const AI_PROMPT = `Turn my class schedule into a list I can import into Zeflo. Write one line per weekly class meeting, in exactly this format, and nothing else:
+
+COURSE TYPE DAYS START-END ROOM FIRST_DAY to LAST_DAY
+
+- COURSE: the course code, like CPS 109
+- TYPE: LEC, TUT, LAB or SEM (or TST for a test or exam)
+- DAYS: the days it meets, like Mon Wed
+- START-END: 12-hour times with AM/PM, like 10:00AM-11:50AM
+- ROOM: the room, like KHE 225 (or Online, or TBA)
+- FIRST_DAY to LAST_DAY: the first and last day it meets, as YYYY-MM-DD (leave this out if you don't know)
+
+For example:
+CPS 109 LEC Mon Wed 10:00AM-11:50AM KHE 225 2026-09-08 to 2026-12-08
+CPS 109 LAB Fri 8:00AM-9:50AM ENG LG14 2026-09-08 to 2026-12-08
+
+Here's my schedule:`;
 
 const button =
   "border border-scene/70 px-5 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-scene-ink transition hover:bg-scene/15 active:scale-[0.98] disabled:opacity-50";
@@ -57,12 +129,40 @@ function Importer() {
   const [termEnd, setTermEnd] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{text: string; error?: boolean} | null>(null);
+  const [school, setSchool] = useState("");
+  const [copied, setCopied] = useState(false);
+  const file = useRef<HTMLInputElement>(null);
 
-  const read = () => {
-    setResult(parseSchedule(text));
-    setSkipped(new Set());
+  // Show what was found. From a calendar file, events that don't name a course (the gym, a
+  // weekly call) start unticked: they're probably not classes.
+  const show = (found: ParseResult, fromCalendar: boolean) => {
+    setResult(found);
+    setSkipped(new Set(fromCalendar ? found.meetings.flatMap((m, i) => (/\d/.test(m.code) ? [] : [i])) : []));
     setMessage(null);
   };
+
+  const read = () => (isCalendarFile(text) ? show(parseCalendarFile(text), true) : show(parseSchedule(text), false));
+
+  const upload = async (chosen: File | undefined) => {
+    if (!chosen) return;
+    if (chosen.size > 5_000_000) return setMessage({text: "That file is too big to be a class schedule.", error: true});
+    const contents = await chosen.text();
+    if (!isCalendarFile(contents)) {
+      return setMessage({text: "That doesn't look like a calendar file. It should end in .ics.", error: true});
+    }
+    show(parseCalendarFile(contents), true);
+  };
+
+  // If the browser won't allow copying, the prompt is selected instead, ready for ⌘C.
+  const promptBox = useRef<HTMLTextAreaElement>(null);
+  const copyPrompt = () =>
+    navigator.clipboard.writeText(AI_PROMPT).then(
+      () => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      },
+      () => promptBox.current?.select(),
+    );
 
   const chosen = result ? result.meetings.filter((_, i) => !skipped.has(i)) : [];
   const undated = chosen.some((m) => !m.startsOn && !m.endsOn);
@@ -93,10 +193,26 @@ function Importer() {
   return (
     <>
       <p className="max-w-2xl text-sm leading-relaxed text-white/75">
-        Copy your class schedule from your school&apos;s portal and paste it below. On Waterloo Quest, open{" "}
-        <span className="text-white">Class Schedule</span>, choose <span className="text-white">List View</span>, then
-        select everything on the page (⌘A or Ctrl+A) and copy.
+        Copy your class schedule from your school&apos;s portal and paste it below. Where do you go?
       </p>
+      <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Your school">
+        {SCHOOLS.map((s) => (
+          <button
+            key={s.id}
+            type="button"
+            aria-pressed={school === s.id}
+            onClick={() => setSchool(school === s.id ? "" : s.id)}
+            className={`rounded-full border px-3 py-1 text-xs transition ${
+              school === s.id ? "border-scene/70 bg-scene/15 text-white" : "border-white/20 text-white/70 hover:border-white/40 hover:text-white"
+            }`}
+          >
+            {s.name}
+          </button>
+        ))}
+      </div>
+      {school && (
+        <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/75">{SCHOOLS.find((s) => s.id === school)?.steps}</p>
+      )}
       <textarea
         value={text}
         onChange={(e) => {
@@ -104,17 +220,66 @@ function Importer() {
           setResult(null);
         }}
         rows={8}
-        placeholder={EXAMPLE}
+        placeholder={SCHOOLS.find((s) => s.id === school)?.example ?? EXAMPLE}
         aria-label="Your class schedule"
         spellCheck={false}
         className="mt-5 w-full resize-y rounded-md border border-white/25 bg-slate-950/30 p-3 text-xs leading-relaxed text-white outline-none backdrop-blur-sm transition placeholder:text-white/35 focus:border-scene [text-shadow:none]"
       />
-      <div className="mt-3 flex items-center justify-between gap-4">
-        <p className="text-xs text-white/50">Only what you paste is read. Nothing is saved until you add it.</p>
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-4">
+        <p className="text-xs text-white/50">
+          Only what you paste is read. Nothing is saved until you add it.{" "}
+          <button type="button" onClick={() => file.current?.click()} className="text-white/70 underline decoration-white/30 underline-offset-4 transition hover:text-white">
+            Or upload a calendar file (.ics)
+          </button>
+          <input
+            ref={file}
+            type="file"
+            accept=".ics,text/calendar"
+            className="hidden"
+            onChange={(e) => {
+              upload(e.target.files?.[0]);
+              e.target.value = ""; // so choosing the same file again still reads it
+            }}
+          />
+        </p>
         <button type="button" onClick={read} disabled={!text.trim()} className={button}>
           Find classes
         </button>
       </div>
+
+      <details className="group mt-6 max-w-2xl rounded-xl border border-scene/30 bg-scene/[0.06] [&_summary::-webkit-details-marker]:hidden">
+        <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 text-sm text-white/85">
+          <span className="text-scene-ink" aria-hidden>
+            ✦
+          </span>
+          <span className="flex-1">Portal looks different? Let your AI read it.</span>
+          <span className="text-white/50 transition group-open:rotate-90" aria-hidden>
+            →
+          </span>
+        </summary>
+        <div className="border-t border-scene/20 px-4 pb-4 pt-3 text-sm leading-relaxed text-white/75">
+          <ol className="list-decimal space-y-1.5 pl-5">
+            <li>Copy the prompt below.</li>
+            <li>
+              Paste it into ChatGPT, Claude or any AI, then add your schedule: paste the text, or attach a{" "}
+              <span className="text-white">screenshot</span> of it.
+            </li>
+            <li>Copy what it writes back, paste it in the box above, and choose Find classes.</li>
+          </ol>
+          <textarea
+            ref={promptBox}
+            readOnly
+            value={AI_PROMPT}
+            rows={6}
+            aria-label="The prompt for your AI"
+            onFocus={(e) => e.currentTarget.select()}
+            className="mt-4 w-full resize-y rounded-md border border-white/15 bg-slate-950/30 p-3 text-xs leading-relaxed text-white/70 outline-none [text-shadow:none] focus:border-scene"
+          />
+          <button type="button" onClick={copyPrompt} className={`mt-3 ${button}`}>
+            {copied ? "Copied" : "Copy the prompt"}
+          </button>
+        </div>
+      </details>
 
       {message && (
         <p role="status" className={`mt-5 text-sm ${message.error ? "text-rose-300" : "text-scene-soft"}`}>
@@ -132,7 +297,7 @@ function Importer() {
           ) : (
             <>
               No classes found. Look for lines with a course, days and times, like &ldquo;CS 135 LEC MWF 10:30AM -
-              11:20AM&rdquo;.
+              11:20AM&rdquo;, or let your AI turn your schedule into those lines (just above).
             </>
           )}
         </div>

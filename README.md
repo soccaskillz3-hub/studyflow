@@ -4,7 +4,7 @@
 
 Zeflo is a calm study planner for students. Bring in your class timetable, plan study sessions around it (or ask your own AI to plan them for you), run a full-screen focus timer or clock for each one, and watch your streak and progress fill in — all floating over a living scene, an ocean or a forest, that follows the real weather and time of day where you are, with sound to match.
 
-**Live at [zeflo.vercel.app](https://zeflo.vercel.app)** · version 1.2.1
+**Live at [zeflo.vercel.app](https://zeflo.vercel.app)** · version 1.3.0
 
 <p>
   <img src="docs/screenshots/forest-day.jpg" alt="Today in the forest theme on a clear day, with light falling through the trees" width="49%">
@@ -21,7 +21,12 @@ Zeflo is a calm study planner for students. Bring in your class timetable, plan 
 
 - **Dashboard** — the first thing you see when you log in. **This week** up top: study time done out of planned, your streak, and a bar for each day. Then **today**: your progress (breaks excluded), today's classes, what's on **now** or **next** (with the time left), and today's sessions, then **countdowns to your next tests and exams**, taken straight from your imported class schedule. Click a session to tick it off.
 - **Calendar** — a **week view** of everything at a glance (classes and study sessions, Monday to Sunday), and an hour-by-hour **day view** with a live "now" line. Step back and forward through weeks and days to plan ahead, with the arrows or by **swiping** (a finger on a phone or iPad, or two fingers on a trackpad); click any open time in the day view to add a session there, or press and drag to draw it at exactly the right length; then type its name right in the block and press Enter. Drag the block to move it, its top and bottom edges to change the times, or click a time to pick it exactly (on phones a panel slides up instead). The × on a session removes it, and overlapping sessions sit side by side. **Schedule** lists today's sessions with an add form.
-- **Classes** — paste your class schedule from your school's portal (Waterloo Quest's list view, other PeopleSoft systems, or plain lines like `CS 135 LEC MWF 10:30-11:20 MC 2065`). Zeflo finds each course's lectures, tutorials and labs with their days, times, rooms and term dates, lets you untick anything it got wrong, and shows them on the calendar on the days they meet, in their own bold colour that changes with the scene. New accounts are asked whether they'd like to add their classes; it lives in **Settings → Classes** after that.
+- **Classes** — bring in your class schedule from any school, three ways:
+  - **Paste it** from your school's portal. Pick your school for step-by-step help: Waterloo (Quest's list view), TMU (MyServiceHub's View My Classes), York (course timetable rows, with a start time and a length in minutes), or any other school, including other PeopleSoft portals and plain lines like `CS 135 LEC MWF 10:30-11:20 MC 2065`.
+  - **Upload a calendar file** (.ics) exported from your portal or calendar app. Weekly events become classes, a one-off event that names a course (a midterm) becomes a test, and anything that isn't a course starts unticked.
+  - **Let your AI read it**: copy Zeflo's prompt into ChatGPT, Claude or any AI with your schedule, as text or a **screenshot**, and paste back what it writes. It works for any portal, even a calendar grid.
+
+  Zeflo finds each course's lectures, tutorials and labs with their days, times, rooms and term dates, lets you untick anything it got wrong, and shows them on the calendar on the days they meet, in their own bold colour that changes with the scene. New accounts are asked whether they'd like to add their classes; it lives in **Settings → Classes** after that.
 - **Progress** — your **streak** (days in a row with a study session done; the flame lights up once today counts), a GitHub-style grid of the **last six months** shaded by how much you got done, and a closer look at any **week** (swipe to move between weeks): done against planned for each day, and a breakdown **by course** ("CS 135 assignment" and "CS 135 lab prep" both count for CS 135).
 - **Start? — timer or clock** — pressing **Start?** on a session asks whether you want the study timer or the clock. The first time you choose, it asks once whether to make that your default; either way it never asks again, and you can change it any time in **Settings → Focus**.
 - **Focus timer** — a full-screen countdown of the session's length. Pause with the button or the space bar, take a break (10, 20, 30 minutes or your own length), add 10 more minutes when time's up, and press **Done** for a little celebration. The timer survives reloads and leaving the page, and the tab title shows the time left.
@@ -208,7 +213,8 @@ app/
     ├── settingsSync.tsx        # Saves theme, scene and sound settings to the account
     ├── prefs.tsx               # Small account choices: Start? default, clock style and seconds
     ├── history.ts              # Study totals by day, and streaks
-    ├── classSchedule.ts        # Reads pasted class schedules
+    ├── classSchedule.ts        # Reads pasted class schedules (Quest, MyServiceHub, York and more)
+    ├── calendarFile.ts         # Reads classes from a calendar file (.ics)
     ├── classes.tsx             # Imported classes and which days they meet
     ├── classMeetings.ts        # Class rows, tests and which days classes meet (server-safe)
     ├── mcp/tools.ts            # What a connected AI can do: read the schedule, plan sessions
