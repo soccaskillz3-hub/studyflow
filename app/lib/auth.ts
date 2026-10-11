@@ -84,9 +84,11 @@ export async function logIn(_: AuthState, form: FormData): Promise<AuthState> {
   redirect(safeNext(text(form, "next")));
 }
 
+// Logs out of this browser only. (Supabase's default logs out everywhere, which would also
+// sign out the person's other devices and disconnect any AI assistant they've connected.)
 export async function logOut() {
   const supabase = await createClient();
-  await supabase.auth.signOut();
+  await supabase.auth.signOut({scope: "local"});
   (await cookies()).delete(RESET_PENDING_COOKIE);
   redirect("/");
 }
@@ -94,7 +96,7 @@ export async function logOut() {
 // "I remembered it" on the reset page: undo the login the reset link did, and go log in properly.
 export async function cancelPasswordReset() {
   const supabase = await createClient();
-  await supabase.auth.signOut();
+  await supabase.auth.signOut({scope: "local"});
   (await cookies()).delete(RESET_PENDING_COOKIE);
   redirect("/login");
 }
@@ -110,6 +112,24 @@ export async function requestPasswordReset(_: AuthState, form: FormData): Promis
   // Same answer whether or not the email has an account, so this can't be used to look people up.
   if (error && error.code !== "user_not_found") return {error: describe(error)};
   return {sent: email};
+}
+
+// Settings → Delete account: removes the login and everything in it (see the delete_account
+// migration), then shows the welcome page with a note that it's done. The form asks for
+// "DELETE" to be typed first, so it can't happen by accident.
+export async function deleteAccount(_: AuthState, form: FormData): Promise<AuthState> {
+  if (text(form, "confirm") !== "DELETE") return {error: "Type DELETE to confirm."};
+
+  const supabase = await createClient();
+  const {error} = await supabase.rpc("delete_my_account");
+  if (error) {
+    console.error("Account deletion failed:", error.message);
+    return {error: "Couldn't delete your account. Please try again, or contact us."};
+  }
+  // The login no longer exists, so just clear its cookies here.
+  await supabase.auth.signOut({scope: "local"});
+  (await cookies()).delete(RESET_PENDING_COOKIE);
+  redirect("/?deleted=1");
 }
 
 export async function updatePassword(_: AuthState, form: FormData): Promise<AuthState> {

@@ -88,8 +88,8 @@ export default function PrivacyPage() {
 
       <h2>How long it&apos;s kept</h2>
       <p>
-        As long as you have an account. Sessions and classes you delete are removed straight away. If you delete your account, everything in it
-        is removed within 30 days.
+        As long as you have an account. Sessions and classes you delete are removed straight away, and so is everything in your account when
+        you delete it.
       </p>
 
       <h2>Your choices</h2>
@@ -97,9 +97,10 @@ export default function PrivacyPage() {
         <li>Change or delete any class, study session or setting in the app at any time.</li>
         <li>Disconnect any AI assistant from Settings → Your AI.</li>
         <li>Logging out clears what Zeflo kept in that browser.</li>
+        <li>Delete your account and everything in it from Settings → Delete account. It happens straight away and can&apos;t be undone.</li>
         <li>
-          To get a copy of your data, or to delete your account and everything in it, get in touch through <a href={CONTACT.href}>{CONTACT.label}</a>. We&apos;ll check the
-          account is yours before doing either.
+          To get a copy of your data, get in touch through <a href={CONTACT.href}>{CONTACT.label}</a>. We&apos;ll check the account is yours
+          first.
         </li>
       </ul>
 

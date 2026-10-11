@@ -1,5 +1,6 @@
 import Link from "next/link";
 import DevLogin from "../components/DevLogin";
+import AccountDeleted from "./AccountDeleted";
 import SectionLabel from "../components/SectionLabel";
 
 // The front door for people who aren't logged in. The proxy shows it at "/" (and sends
@@ -11,7 +12,8 @@ const FEATURES = [
   {title: "Track", text: "Keep a streak going, and see your week, your courses and months of studying at a glance."},
 ];
 
-export default function WelcomePage() {
+export default async function WelcomePage({searchParams}: PageProps<"/welcome">) {
+  const {deleted} = await searchParams;
   return (
     <main className="sf-lift flex flex-1 flex-col font-mono text-white">
       <div className="mx-auto w-full max-w-3xl px-5 pb-32 pt-10 sm:px-8 sm:pt-14">
@@ -23,6 +25,7 @@ export default function WelcomePage() {
         </header>
 
         <section className="mt-24 sm:mt-32">
+          {deleted === "1" && <AccountDeleted />}
           <h1 className="max-w-xl text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
             Plan your study day. Then actually do it.
           </h1>

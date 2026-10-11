@@ -4,6 +4,7 @@ import Link from "next/link";
 import {useCallback, useRef, useState, type CSSProperties, type KeyboardEvent} from "react";
 import {useFormStatus} from "react-dom";
 import AiConnect from "./AiConnect";
+import DeleteAccount from "./DeleteAccount";
 import {forgetThisBrowser, useAccount} from "../lib/account";
 import {logOut} from "../lib/auth";
 import {useClasses} from "../lib/classes";
@@ -363,22 +364,28 @@ function LogOutButton() {
   );
 }
 
-// Who's logged in, and the way out. Logging out also clears what Zeflo kept in this browser.
-function AccountFooter() {
+// Who's logged in, and the ways out. Logging out also clears what Zeflo kept in this browser.
+function AccountFooter({onDelete}: {onDelete: () => void}) {
   const account = useAccount();
   if (!account) return null;
   return (
-    <form
-      action={logOut}
-      onSubmit={forgetThisBrowser}
-      className="mt-4 flex items-center justify-between gap-3 border-t border-dashed border-white/15 pt-3"
-    >
-      <p className="min-w-0">
-        <span className="block text-[11px] uppercase tracking-[0.25em] text-white/60">Logged in as</span>
-        <span className="mt-0.5 block truncate text-xs text-white/85">{account.email}</span>
-      </p>
-      <LogOutButton />
-    </form>
+    <div className="mt-4 border-t border-dashed border-white/15 pt-3">
+      <form action={logOut} onSubmit={forgetThisBrowser} className="flex items-center justify-between gap-3">
+        <p className="min-w-0">
+          <span className="block text-[11px] uppercase tracking-[0.25em] text-white/60">Logged in as</span>
+          <span className="mt-0.5 block truncate text-xs text-white/85">{account.email}</span>
+        </p>
+        <LogOutButton />
+      </form>
+      <button
+        type="button"
+        aria-haspopup="dialog"
+        onClick={onDelete}
+        className="mt-2 text-[11px] text-white/45 underline decoration-white/20 underline-offset-4 transition hover:text-rose-200 hover:decoration-rose-200/50"
+      >
+        Delete account
+      </button>
+    </div>
   );
 }
 
@@ -386,6 +393,7 @@ export default function SettingsMenu() {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<Tab>("theme");
   const [aiOpens, setAiOpens] = useState(0);
+  const [deleteOpens, setDeleteOpens] = useState(0);
   const root = useRef<HTMLDivElement>(null);
   const close = useCallback(() => setOpen(false), []);
   useDismiss(root, open, close);
@@ -472,10 +480,16 @@ export default function SettingsMenu() {
             </span>
           </button>
 
-          <AccountFooter />
+          <AccountFooter
+            onDelete={() => {
+              close();
+              setDeleteOpens((n) => n + 1);
+            }}
+          />
         </div>
       )}
       <AiConnect opens={aiOpens} />
+      <DeleteAccount key={deleteOpens} opens={deleteOpens} />
     </div>
   );
 }

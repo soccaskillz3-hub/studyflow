@@ -46,7 +46,7 @@ export default function TermsPage() {
       <p>
         Zeflo is free. It&apos;s provided as is: we work to keep it running and your data safe, but can&apos;t promise it will always be
         available or free of mistakes. Features may change, and we may suspend accounts that break these terms. You can stop using Zeflo and
-        ask us to delete your account at any time.
+        delete your account, from Settings, at any time.
       </p>
 
       <h2>Liability</h2>

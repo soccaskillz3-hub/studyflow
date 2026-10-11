@@ -4,7 +4,7 @@
 
 Zeflo is a calm study planner for students. Bring in your class timetable, plan study sessions around it (or ask your own AI to plan them for you), run a full-screen focus timer or clock for each one, and watch your streak and progress fill in — all floating over a living scene, an ocean or a forest, that follows the real weather and time of day where you are, with sound to match.
 
-**Live at [zeflo.vercel.app](https://zeflo.vercel.app)** · version 1.2.0
+**Live at [zeflo.vercel.app](https://zeflo.vercel.app)** · version 1.2.1
 
 <p>
   <img src="docs/screenshots/forest-day.jpg" alt="Today in the forest theme on a clear day, with light falling through the trees" width="49%">
@@ -27,7 +27,7 @@ Zeflo is a calm study planner for students. Bring in your class timetable, plan 
 - **Focus timer** — a full-screen countdown of the session's length. Pause with the button or the space bar, take a break (10, 20, 30 minutes or your own length), add 10 more minutes when time's up, and press **Done** for a little celebration. The timer survives reloads and leaving the page, and the tab title shows the time left.
 - **Clock** — a full-screen clock over the scene, for when you just want the time and the view (the clock button in the header, or from Start?). Swipe (a finger, or two fingers on a trackpad), drag, use the arrow keys or the dots to choose a style: **Classic** big numbers, an **Analog** dial with a sweeping second hand, the time in **Words** ("just after twenty-five past two"), **Orbit** rings for hours, minutes and seconds, or a **Sun path** showing where the sun or moon is in its arc. Your style is saved to your account, and Classic can show the seconds as numbers instead of a line (the small toggle under it). Opening the clock draws the scene in around you — deeper colour and contrast, a gentle zoom and a soft vignette — and the time sharpens into view. The controls fade away when you're not moving the mouse, it can go full screen, and it keeps the screen awake. Opened from a session, it shows that session (with a progress line that moves smoothly) and a **Done** button.
 - **Time and date pickers** in the site's own style — hour, minute and AM/PM columns for times, and a month calendar for term dates, both with full keyboard support.
-- **Your own account** — sign up with an email and password. Your classes, each day's schedule, what you've finished, and your theme, sound and clock settings are saved to your account, private to you, and follow you between devices. Visitors who aren't logged in see a welcome page, and the [privacy policy](https://zeflo.vercel.app/privacy), [terms](https://zeflo.vercel.app/terms) and [support](https://zeflo.vercel.app/support) pages are open to everyone.
+- **Your own account** — sign up with an email and password, and confirm it from a Zeflo email whose link works on any device (password resets work the same way). Your classes, each day's schedule, what you've finished, and your theme, sound and clock settings are saved to your account, private to you, and follow you between devices. Logging out signs out only that browser, so your other devices and your connected AI stay signed in. **Settings → Delete account** removes the account and everything in it straight away, after you type DELETE to confirm. Visitors who aren't logged in see a welcome page, and the [privacy policy](https://zeflo.vercel.app/privacy), [terms](https://zeflo.vercel.app/terms) and [support](https://zeflo.vercel.app/support) pages are open to everyone.
 
 <p>
   <img src="docs/screenshots/dashboard.jpg" alt="The dashboard at dusk in the forest: study time this week, a six-day streak and a bar for each day" width="49%">
@@ -156,7 +156,8 @@ Open-Meteo's free API is for non-commercial use, which suits a personal project 
 ```
 proxy.ts                        # Keeps logins fresh; welcome page or login for visitors
 supabase/
-├── migrations/                 # Tables and privacy rules (run in the SQL Editor)
+├── migrations/                 # Tables, privacy rules, account deletion (run in the SQL Editor)
+├── templates/                  # Zeflo's confirm and reset emails (pasted into Supabase)
 └── tests/privacy.sql           # Checks accounts can't reach each other's data
 app/
 ├── (main)/                     # Pages that share the header (login required)
@@ -192,6 +193,7 @@ app/
 │   ├── StartButton.tsx         # Start?: the timer-or-clock choice
 │   ├── SettingsMenu.tsx        # Theme, Sound, Focus, Classes, account
 │   ├── AiConnect.tsx           # The Your AI window: connect, prompts, disconnect
+│   ├── DeleteAccount.tsx       # Settings → Delete account, with a type-DELETE check
 │   ├── MuteButton.tsx
 │   ├── TimePicker.tsx, DatePicker.tsx  # In the site's style, not the browser's
 │   └── …                       # Header, session form and list
@@ -214,7 +216,7 @@ app/
     ├── dayLayout.ts            # Sessions and classes laid out on a timeline
     ├── days.ts                 # "YYYY-MM-DD" day helpers in local time
     ├── account.tsx             # The logged-in user, for client components
-    ├── auth.ts                 # Server actions: sign up, log in, log out, passwords
+    ├── auth.ts                 # Server actions: sign up, log in, log out, passwords, delete account
     ├── dal.ts                  # Server-side login check for pages
     ├── supabase/               # Supabase clients for the browser, server and proxy
     ├── useSwipe.ts             # Touch and trackpad swipes for next / previous

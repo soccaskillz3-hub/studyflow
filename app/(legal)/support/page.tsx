@@ -41,8 +41,8 @@ export default function SupportPage() {
           choose the weather and time of day yourself in Settings → Theme.
         </li>
         <li>
-          <strong>Deleting your account:</strong> get in touch through <a href={CONTACT.href}>{CONTACT.label}</a>, and once we&apos;ve checked the account is yours,
-          everything in it will be removed within 30 days.
+          <strong>Deleting your account:</strong> open Settings and choose Delete account, under your email. Everything in it is removed
+          straight away. If you can&apos;t log in any more, get in touch through <a href={CONTACT.href}>{CONTACT.label}</a> instead.
         </li>
       </ul>
 

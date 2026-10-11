@@ -35,7 +35,7 @@ export async function proxy(request: NextRequest) {
 
   if (matches(pathname, GUEST_PAGES)) return response;
   // The address stays "/", so the site's front door is the welcome page.
-  if (pathname === "/") return carry(NextResponse.rewrite(new URL("/welcome", request.url)));
+  if (pathname === "/") return carry(NextResponse.rewrite(new URL(`/welcome${search}`, request.url)));
 
   const login = new URL("/login", request.url);
   login.searchParams.set("next", pathname + search);
